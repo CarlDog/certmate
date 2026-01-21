@@ -212,9 +212,9 @@ public sealed class CollectionOrchestrator
 public sealed class CollectionResult
 {
     public required Guid CycleId { get; init; }
-public required Machine Machine { get; init; }
-public int CertificatesProcessed { get; init; }
-public int BindingsProcessed { get; init; }
-public bool IsSuccess { get; init; }
-public required IReadOnlyCollection<string> Errors { get; init; } = Array.Empty<string>();
+    public required Machine Machine { get; init; }
+    public int CertificatesProcessed { get; init; }
+    public int BindingsProcessed { get; init; }
+    public bool IsSuccess { get; init; }
+    public required IReadOnlyCollection<string> Errors { get; init; } = Array.Empty<string>();
 }
