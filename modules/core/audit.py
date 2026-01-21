@@ -3,11 +3,11 @@ Audit logging module for CertMate
 Tracks all certificate operations for compliance and debugging
 """
 
-import logging
 import json
-from pathlib import Path
+import logging
 from datetime import datetime
-from typing import Optional, Dict, Any
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -229,7 +229,7 @@ class AuditLogger:
             List of audit entries (parsed JSON)
         """
         try:
-            entries = []
+            entries: list[dict] = []
             if not self.audit_log_file.exists():
                 return entries
 
@@ -251,7 +251,7 @@ class AuditLogger:
             logger.error(f"Error reading audit logs: {e}")
             return []
 
-    def get_entries_by_resource(self, resource_id: str) -> list:
+    def get_entries_by_resource(self, resource_id: str) -> list[dict]:
         """
         Get all audit entries for a specific resource.
 
@@ -262,7 +262,7 @@ class AuditLogger:
             List of matching audit entries
         """
         try:
-            entries = []
+            entries: list[dict] = []
             if not self.audit_log_file.exists():
                 return entries
 

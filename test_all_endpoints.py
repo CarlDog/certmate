@@ -31,13 +31,13 @@ class EndpointTester:
     def __init__(
         self,
         base_url: str = "http://127.0.0.1:8000",
-        api_token: str = None,
+        api_token: str | None = None,
         quick_mode: bool = False,
     ):
         self.base_url = base_url.rstrip("/")
         self.api_token = api_token
         self.quick_mode = quick_mode
-        self.results = []
+        self.results: list[tuple[bool, str, int]] = []
         self.session = requests.Session()
 
         # Set default headers
@@ -54,8 +54,8 @@ class EndpointTester:
         method: str,
         path: str,
         description: str,
-        data: dict = None,
-        expected_codes: List[int] = None,
+        data: dict | None = None,
+        expected_codes: List[int] | None = None,
         requires_auth: bool = True,
     ) -> Tuple[bool, str, int]:
         """Test a single endpoint and return (success, message, status_code)"""

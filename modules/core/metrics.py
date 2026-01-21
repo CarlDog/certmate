@@ -10,6 +10,56 @@ import time
 
 logger = logging.getLogger(__name__)
 
+
+# Mock classes for when prometheus_client is not available
+class _MockCounter:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def inc(self, *args, **kwargs):
+        pass
+
+    def labels(self, *args, **kwargs):
+        return self
+
+
+class _MockGauge:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def set(self, *args, **kwargs):
+        pass
+
+    def labels(self, *args, **kwargs):
+        return self
+
+
+class _MockHistogram:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def observe(self, *args, **kwargs):
+        pass
+
+    def labels(self, *args, **kwargs):
+        return self
+
+
+class _MockInfo:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def info(self, *args, **kwargs):
+        pass
+
+
+def _mock_generate_latest(*args, **kwargs):
+    return "# Prometheus client not available\n"
+
+
+_MOCK_CONTENT_TYPE = "text/plain"
+
+
 # Prometheus client library
 try:
     from prometheus_client import (
@@ -26,95 +76,21 @@ try:
 except ImportError as e:
     logger.warning(f"Prometheus client library not available: {e}")
     PROMETHEUS_AVAILABLE = False
-
-    # Mock classes for when prometheus_client is not available
-    class Counter:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def inc(self, *args, **kwargs):
-            pass
-
-        def labels(self, *args, **kwargs):
-            return self
-
-    class Gauge:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def set(self, *args, **kwargs):
-            pass
-
-        def labels(self, *args, **kwargs):
-            return self
-
-    class Histogram:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def observe(self, *args, **kwargs):
-            pass
-
-        def labels(self, *args, **kwargs):
-            return self
-
-    class Info:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def info(self, *args, **kwargs):
-            pass
-
-    def generate_latest(*args, **kwargs):
-        return "# Prometheus client not available\n"
-
-    CONTENT_TYPE_LATEST = "text/plain"
+    Counter = _MockCounter  # type: ignore
+    Gauge = _MockGauge  # type: ignore
+    Histogram = _MockHistogram  # type: ignore
+    Info = _MockInfo  # type: ignore
+    generate_latest = _mock_generate_latest  # type: ignore
+    CONTENT_TYPE_LATEST = _MOCK_CONTENT_TYPE
 except Exception as e:
     logger.error(f"Unexpected error loading Prometheus client: {e}")
     PROMETHEUS_AVAILABLE = False
-
-    # Use the same mock classes
-    class Counter:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def inc(self, *args, **kwargs):
-            pass
-
-        def labels(self, *args, **kwargs):
-            return self
-
-    class Gauge:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def set(self, *args, **kwargs):
-            pass
-
-        def labels(self, *args, **kwargs):
-            return self
-
-    class Histogram:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def observe(self, *args, **kwargs):
-            pass
-
-        def labels(self, *args, **kwargs):
-            return self
-
-    class Info:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def info(self, *args, **kwargs):
-            pass
-
-    def generate_latest(*args, **kwargs):
-        return "# Prometheus client not available\n"
-
-    CONTENT_TYPE_LATEST = "text/plain"
+    Counter = _MockCounter  # type: ignore
+    Gauge = _MockGauge  # type: ignore
+    Histogram = _MockHistogram  # type: ignore
+    Info = _MockInfo  # type: ignore
+    generate_latest = _mock_generate_latest  # type: ignore
+    CONTENT_TYPE_LATEST = _MOCK_CONTENT_TYPE
 
 # =============================================
 # METRICS DEFINITIONS

@@ -1,7 +1,10 @@
 {
   "extends": "default",
   "rules": {
-    "MD013": false,
+    "MD013": {
+      "line_length": 300,
+      "heading_line_length": 300
+    },
     "MD022": false,
     "MD024": false,
     "MD031": false,

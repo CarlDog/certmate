@@ -4,11 +4,12 @@ Simple rate limiting configuration for API endpoints
 """
 
 import logging
-from typing import Dict, Optional
-from functools import wraps
-from flask import request
 from collections import defaultdict
+from functools import wraps
 from time import time
+from typing import Dict, Optional
+
+from flask import request
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,9 @@ class SimpleRateLimiter:
             config: RateLimitConfig instance
         """
         self.config = config
-        self.requests = defaultdict(list)  # Track request times per IP
+        self.requests: defaultdict[str, list[float]] = defaultdict(
+            list
+        )  # Track request times per IP
 
     def is_allowed(self, identifier: str, endpoint: str) -> bool:
         """

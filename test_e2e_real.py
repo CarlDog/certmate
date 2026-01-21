@@ -688,7 +688,7 @@ def test_invalid_domain_format(runner: TestRunner) -> Tuple[bool, str, Dict]:
 
 def test_missing_required_fields(runner: TestRunner) -> Tuple[bool, str, Dict]:
     """Test that missing required fields are caught"""
-    payload = {}  # Empty payload
+    payload: dict = {}  # Empty payload
 
     response, _ = runner.api_call("POST", "/api/certificates", json=payload)
 

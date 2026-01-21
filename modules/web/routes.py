@@ -20,7 +20,7 @@ from ..core.metrics import generate_metrics_response
 logger = logging.getLogger(__name__)
 
 # Simple login rate limiter (5 attempts per IP per minute)
-_login_attempts = defaultdict(list)
+_login_attempts: dict[str, list[float]] = defaultdict(list)
 _LOGIN_RATE_LIMIT = 5
 _LOGIN_RATE_WINDOW = 60  # seconds
 

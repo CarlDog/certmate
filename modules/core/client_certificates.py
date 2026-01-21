@@ -3,19 +3,19 @@ Client Certificate Manager for CertMate
 Handles creation, management, renewal, and revocation of client certificates
 """
 
-import logging
 import json
+import logging
 import os
-from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 from cryptography.hazmat.primitives import serialization
 
-from .private_ca import PrivateCAGenerator
+from .constants import MAX_CERTIFICATE_VALIDITY_DAYS, MIN_CERTIFICATE_VALIDITY_DAYS
 from .csr_handler import CSRHandler
-from .constants import MIN_CERTIFICATE_VALIDITY_DAYS, MAX_CERTIFICATE_VALIDITY_DAYS
+from .private_ca import PrivateCAGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -513,13 +513,13 @@ class ClientCertificateManager:
             revoked_certs = self.list_client_certificates(revoked=True)
 
             # Count by usage
-            by_usage = {}
+            by_usage: dict[str, int] = {}
             for cert in active_certs:
                 usage = cert.get("cert_usage", "other")
                 by_usage[usage] = by_usage.get(usage, 0) + 1
 
             # Count by organization
-            by_org = {}
+            by_org: dict[str, int] = {}
             for cert in active_certs:
                 org = cert.get("organization", "Unknown")
                 by_org[org] = by_org.get(org, 0) + 1

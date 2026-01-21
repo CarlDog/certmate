@@ -7,13 +7,14 @@ repos:
         args: ["--fix"]
       - id: ruff-format
 
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.11.2
-  #   hooks:
-  #     - id: mypy
-  #       additional_dependencies: []
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies: []
+        args: [--config-file=mypy.ini]
 
-  # Markdown linting - disabled due to existing README formatting
+  # Markdownlint - disabled for now due to extensive existing style violations
   # - repo: https://github.com/igorshubovych/markdownlint-cli
   #   rev: v0.41.0
   #   hooks:
