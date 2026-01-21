@@ -1,0 +1,11 @@
+pytest
+pytest-cov
+pytest-mock
+pytest-asyncio
+pytest-flask
+pytest-xdist
+pytest-playwright
+coverage
+requests-mock
+freezegun
+playwright
