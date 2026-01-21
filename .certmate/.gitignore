@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Application specific
+# SECURITY: Never commit settings.json - may contain API tokens and secrets
+settings.json
+data/settings.json
+cloudflare.ini
+certificates/
+data/
+logs/
+*.pem
+*.key
+*.crt
+*.csr
+letsencrypt/
+.secrets/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Backup files
+*_old.*
+*_backup.*
+
+# Planning and development documents
+NEXT_FEATURES.md
+!MULTI_ACCOUNT_EXAMPLES.md
+
+htmlcov/
+.pytest_cache/
+
+backups/
+app.py.backup
+
+# Test files with sensitive data
+test_real_cert_*.py
+test_api_*.py
+test_certificate_creation_*.py
+real_world_test_*.py
+integration_test_*.py
+github_response.md
