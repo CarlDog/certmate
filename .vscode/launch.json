@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Worker: Agent",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "dotnet build",
+            "program": "${workspaceFolder}/src/Agent/bin/Debug/net9.0/Agent.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Agent",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            },
+            "console": "integratedTerminal"
+        }
+    ]
+}

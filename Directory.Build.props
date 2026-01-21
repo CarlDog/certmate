@@ -1,0 +1,38 @@
+<Project>
+    <PropertyGroup>
+        <!-- Code Analysis -->
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <AnalysisMode>All</AnalysisMode>
+        <AnalysisLevel>latest</AnalysisLevel>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+        <!-- Treat warnings as errors in Release builds -->
+        <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
+
+        <!-- Suppress specific warnings with good reasons -->
+        <NoWarn>$(NoWarn);CA1812;CA1848;S2094</NoWarn>
+        <!-- CA1812: Configuration classes instantiated by DI container, not directly -->
+        <!-- CA1848: LoggerMessage delegates are premature optimization for simple logging -->
+        <!-- S2094: Empty classes are intentional placeholders for incremental hexagonal population -->
+    </PropertyGroup>
+    <ItemGroup>
+        <!-- Microsoft Code Analysis (built into .NET 9, just ensuring it's active) -->
+        <!-- Security analyzers -->
+        <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="4.14.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+
+        <!-- Async/threading best practices -->
+        <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.13.2">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+
+        <!-- Code quality and performance -->
+        <PackageReference Include="SonarAnalyzer.CSharp" Version="10.7.0.110445">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+</Project>

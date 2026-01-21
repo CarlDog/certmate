@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REMOTE_NAME=${1:-}
+REMOTE_URL=${2:-}
+
+# Enforce pushing via 'origin' so both remotes stay in sync
+if [[ "${REMOTE_NAME}" != "origin" ]]; then
+  echo "[pre-push] Blocked: push to '${REMOTE_NAME}'. Use 'origin' to mirror to GitHub + Azure DevOps."
+  echo "           Try: git push origin $(git branch --show-current)"
+  exit 1
+fi
+
+# Ensure origin has both pushurls configured (auto-heal if missing)
+GITHUB_URL="https://github.com/CarlDog-Cambridge/InventoryManagement.git"
+AZDO_URL="https://dev.azure.com/Cambridge-Technology/ProductionSupport/_git/InventoryManagement"
+
+pushurls=$(git config --get-all remote.origin.pushurl || true)
+if ! grep -qi "github.com" <<<"$pushurls"; then
+  echo "[pre-push] Adding GitHub pushurl to origin"
+  git remote set-url --add --push origin "$GITHUB_URL"
+fi
+if ! grep -qi "dev.azure.com" <<<"$pushurls"; then
+  echo "[pre-push] Adding Azure DevOps pushurl to origin"
+  git remote set-url --add --push origin "$AZDO_URL"
+fi
+
+echo "[pre-push] Mirroring via 'origin' confirmed. Proceeding with push..."
+exit 0
