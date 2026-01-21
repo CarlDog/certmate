@@ -35,12 +35,21 @@ cloudflare.ini
 certificates/
 data/
 logs/
+backups/
 *.pem
 *.key
 *.crt
 *.csr
 letsencrypt/
 .secrets/
+
+# Platform-specific
+platform/api-gateway/node_modules/
+platform/api-gateway/.env
+platform/web-ui/node_modules/
+platform/web-ui/build/
+platform/web-ui/.env
+platform/config/*.local.yml
 
 # Environment files
 .env
