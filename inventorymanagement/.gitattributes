@@ -1,0 +1,12 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Ensure hooks are LF so bash executes them
+.githooks/* text eol=lf
+
+# Keep PowerShell scripts CRLF for Windows
+*.ps1 text eol=crlf
+
+# Treat solution/project files as text
+*.sln text eol=crlf
+*.csproj text eol=crlf

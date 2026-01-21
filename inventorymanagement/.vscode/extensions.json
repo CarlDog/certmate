@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit",
+        "streetsidesoftware.code-spell-checker",
+        "esbenp.prettier-vscode",
+        "DavidAnson.vscode-markdownlint",
+        "eamodio.gitlens"
+    ]
+}
