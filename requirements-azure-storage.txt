@@ -1,3 +1,0 @@
-# Optional dependencies for Azure Key Vault storage backend
-azure-keyvault-secrets>=4.7.0
-azure-identity>=1.12.0

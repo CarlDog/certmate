@@ -1,50 +1,88 @@
+version: '3.8'
 
 services:
   certmate:
-    build: 
-      context: .
-      args:
-        REQUIREMENTS_FILE: requirements.txt
-    # Uncomment to use pre-built multi-platform image instead of building locally:
-    # image: YOUR_DOCKERHUB_USERNAME/certmate:latest
-    # platform: linux/amd64  # Optional: force specific platform (linux/amd64, linux/arm64)
-    container_name: certmate
+    build:
+      context: .certmate
+      dockerfile: Dockerfile
+    container_name: cambridge-certmate
     ports:
-      - "8000:8000"
+      - "5000:5000"
     environment:
       - FLASK_ENV=production
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
-      - CLOUDFLARE_TOKEN=${CLOUDFLARE_TOKEN}
-      - API_BEARER_TOKEN=${API_BEARER_TOKEN}
+      - DATABASE_URL=sqlite:////data/certmate.db
     volumes:
-      - ./certificates:/app/certificates:rw
-      - ./logs:/app/logs:rw
-      - ./data:/app/data:rw
-      - ./backups:/app/backups:rw
+      - certmate-data:/data
+      - certmate-certs:/certificates
+    networks:
+      - cambridge-platform
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
-  # Optional: Add nginx reverse proxy
-  nginx:
-    image: nginx:alpine
-    container_name: certmate-nginx
+  inventory-agent:
+    build:
+      context: .inventorymanagement
+      dockerfile: src/Agent/Dockerfile
+    container_name: cambridge-inventory
     ports:
-      - "80:80"
-      - "443:443"
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=db;Database=InventoryDB;User=sa;Password=YourStrong@Passw0rd
+    depends_on:
+      - db
+    networks:
+      - cambridge-platform
+    restart: unless-stopped
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: cambridge-db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certificates:/etc/nginx/ssl:ro
+      - mssql-data:/var/opt/mssql
+    networks:
+      - cambridge-platform
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: platform/api-gateway
+      dockerfile: Dockerfile
+    container_name: cambridge-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - CERTMATE_URL=http://certmate:5000
+      - INVENTORY_URL=http://inventory-agent:5001
     depends_on:
       - certmate
+      - inventory-agent
+    networks:
+      - cambridge-platform
     restart: unless-stopped
-    profiles:
-      - nginx
+
+  web-ui:
+    build:
+      context: platform/web-ui
+      dockerfile: Dockerfile
+    container_name: cambridge-ui
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_GATEWAY=http://localhost:8080/api
+    depends_on:
+      - api-gateway
+    networks:
+      - cambridge-platform
+    restart: unless-stopped
+
+volumes:
+  certmate-data:
+  certmate-certs:
+  mssql-data:
 
 networks:
-  default:
-    name: certmate_network
+  cambridge-platform:
+    driver: bridge
