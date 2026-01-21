@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 from cryptography import x509
-from cryptography.x509.oid import NameOID, ExtensionOID
+from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
@@ -84,19 +84,21 @@ class PrivateCAGenerator:
             # Generate RSA private key (4096 bits for CA)
             logger.debug("Generating RSA 4096 private key for CA")
             private_key = rsa.generate_private_key(
-                public_exponent=65537,
-                key_size=4096,
-                backend=default_backend()
+                public_exponent=65537, key_size=4096, backend=default_backend()
             )
 
             # Create CA subject and issuer (same for self-signed)
-            subject = issuer = x509.Name([
-                x509.NameAttribute(NameOID.COUNTRY_NAME, "CH"),
-                x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Switzerland"),
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "CertMate"),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "Certificate Authority"),
-                x509.NameAttribute(NameOID.COMMON_NAME, "CertMate CA"),
-            ])
+            subject = issuer = x509.Name(
+                [
+                    x509.NameAttribute(NameOID.COUNTRY_NAME, "CH"),
+                    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Switzerland"),
+                    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "CertMate"),
+                    x509.NameAttribute(
+                        NameOID.ORGANIZATIONAL_UNIT_NAME, "Certificate Authority"
+                    ),
+                    x509.NameAttribute(NameOID.COMMON_NAME, "CertMate CA"),
+                ]
+            )
 
             # Build CA certificate
             cert_builder = x509.CertificateBuilder()
@@ -113,8 +115,7 @@ class PrivateCAGenerator:
 
             # Add CA extensions
             cert_builder = cert_builder.add_extension(
-                x509.BasicConstraints(ca=True, path_length=None),
-                critical=True
+                x509.BasicConstraints(ca=True, path_length=None), critical=True
             )
             cert_builder = cert_builder.add_extension(
                 x509.KeyUsage(
@@ -128,28 +129,28 @@ class PrivateCAGenerator:
                     encipher_only=False,
                     decipher_only=False,
                 ),
-                critical=True
+                critical=True,
             )
             cert_builder = cert_builder.add_extension(
                 x509.SubjectKeyIdentifier.from_public_key(private_key.public_key()),
-                critical=False
+                critical=False,
             )
 
             # Self-sign the certificate
             ca_cert = cert_builder.sign(
-                private_key,
-                hashes.SHA256(),
-                backend=default_backend()
+                private_key, hashes.SHA256(), backend=default_backend()
             )
 
             # Save private key (PEM format)
             logger.debug(f"Saving CA private key to {self.ca_key_path}")
-            with open(self.ca_key_path, 'wb') as f:
-                f.write(private_key.private_bytes(
-                    encoding=serialization.Encoding.PEM,
-                    format=serialization.PrivateFormat.TraditionalOpenSSL,
-                    encryption_algorithm=serialization.NoEncryption()
-                ))
+            with open(self.ca_key_path, "wb") as f:
+                f.write(
+                    private_key.private_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PrivateFormat.TraditionalOpenSSL,
+                        encryption_algorithm=serialization.NoEncryption(),
+                    )
+                )
 
             # Restrict permissions on private key (Unix-like systems)
             try:
@@ -160,7 +161,7 @@ class PrivateCAGenerator:
 
             # Save certificate (PEM format)
             logger.debug(f"Saving CA certificate to {self.ca_cert_path}")
-            with open(self.ca_cert_path, 'wb') as f:
+            with open(self.ca_cert_path, "wb") as f:
                 f.write(ca_cert.public_bytes(serialization.Encoding.PEM))
 
             # Save metadata
@@ -171,7 +172,9 @@ class PrivateCAGenerator:
             self._ca_cert = ca_cert
             self._ca_loaded = True
 
-            logger.info(f"Successfully generated CA (valid until {not_valid_after.isoformat()})")
+            logger.info(
+                f"Successfully generated CA (valid until {not_valid_after.isoformat()})"
+            )
             return True
 
         except Exception as e:
@@ -191,19 +194,16 @@ class PrivateCAGenerator:
                 return False
 
             # Load private key
-            with open(self.ca_key_path, 'rb') as f:
+            with open(self.ca_key_path, "rb") as f:
                 self._ca_key = serialization.load_pem_private_key(
-                    f.read(),
-                    password=None,
-                    backend=default_backend()
+                    f.read(), password=None, backend=default_backend()
                 )
 
             # Load certificate
-            with open(self.ca_cert_path, 'rb') as f:
+            with open(self.ca_cert_path, "rb") as f:
                 cert_data = f.read()
                 self._ca_cert = x509.load_pem_x509_certificate(
-                    cert_data,
-                    backend=default_backend()
+                    cert_data, backend=default_backend()
                 )
 
             self._ca_loaded = True
@@ -240,11 +240,11 @@ class PrivateCAGenerator:
                 "issuer": {
                     "country": "CH",
                     "organization": "CertMate",
-                    "common_name": common_name
-                }
+                    "common_name": common_name,
+                },
             }
 
-            with open(self.ca_metadata_path, 'w') as f:
+            with open(self.ca_metadata_path, "w") as f:
                 json.dump(metadata, f, indent=2)
 
             logger.debug(f"Saved CA metadata to {self.ca_metadata_path}")
@@ -273,12 +273,15 @@ class PrivateCAGenerator:
 
             # Backup files
             import shutil
+
             if self.ca_key_path.exists():
                 shutil.copy(self.ca_key_path, backup_dir / f"ca_{timestamp}.key")
             if self.ca_cert_path.exists():
                 shutil.copy(self.ca_cert_path, backup_dir / f"ca_{timestamp}.crt")
             if self.ca_metadata_path.exists():
-                shutil.copy(self.ca_metadata_path, backup_dir / f"ca_metadata_{timestamp}.json")
+                shutil.copy(
+                    self.ca_metadata_path, backup_dir / f"ca_metadata_{timestamp}.json"
+                )
 
             logger.info(f"Backed up existing CA to {backup_dir}")
             return True
@@ -289,7 +292,9 @@ class PrivateCAGenerator:
 
     def is_ca_loaded(self) -> bool:
         """Check if CA is loaded in memory."""
-        return self._ca_loaded and self._ca_key is not None and self._ca_cert is not None
+        return (
+            self._ca_loaded and self._ca_key is not None and self._ca_cert is not None
+        )
 
     def get_ca_certificate(self) -> Optional[x509.Certificate]:
         """Get loaded CA certificate."""
@@ -314,7 +319,7 @@ class PrivateCAGenerator:
         if not self.ca_metadata_path.exists():
             return None
         try:
-            with open(self.ca_metadata_path, 'r') as f:
+            with open(self.ca_metadata_path, "r") as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Error reading CA metadata: {e}")
@@ -336,6 +341,7 @@ class PrivateCAGenerator:
                 return False
 
             import shutil
+
             shutil.copy(self.ca_cert_path, output_path)
             logger.info(f"Exported CA certificate to {output_path}")
             return True
@@ -348,7 +354,7 @@ class PrivateCAGenerator:
         self,
         csr: x509.CertificateSigningRequest,
         days_valid: int = 365,
-        extended_key_usage: list = None
+        extended_key_usage: list = None,
     ) -> Optional[x509.Certificate]:
         """
         Sign a Certificate Signing Request (CSR).
@@ -382,8 +388,7 @@ class PrivateCAGenerator:
             # Copy extensions from CSR
             for extension in csr.extensions:
                 cert_builder = cert_builder.add_extension(
-                    extension.value,
-                    critical=extension.critical
+                    extension.value, critical=extension.critical
                 )
 
             # Add extended key usage if specified
@@ -404,15 +409,17 @@ class PrivateCAGenerator:
                         # Remove any existing EKU extension
                         try:
                             cert_builder._extensions = [
-                                ext for ext in cert_builder._extensions
+                                ext
+                                for ext in cert_builder._extensions
                                 if ext.oid != x509.oid.ExtensionOID.EXTENDED_KEY_USAGE
                             ]
                         except (AttributeError, TypeError) as eku_error:
-                            logger.debug(f"Could not remove existing EKU extension: {eku_error}")
+                            logger.debug(
+                                f"Could not remove existing EKU extension: {eku_error}"
+                            )
 
                         cert_builder = cert_builder.add_extension(
-                            x509.ExtendedKeyUsage(eku_list),
-                            critical=True
+                            x509.ExtendedKeyUsage(eku_list), critical=True
                         )
                 except Exception as e:
                     logger.warning(f"Error adding extended key usage: {e}")
@@ -420,23 +427,25 @@ class PrivateCAGenerator:
             # Add subject key identifier
             cert_builder = cert_builder.add_extension(
                 x509.SubjectKeyIdentifier.from_public_key(csr.public_key()),
-                critical=False
+                critical=False,
             )
 
             # Add authority key identifier
             cert_builder = cert_builder.add_extension(
-                x509.AuthorityKeyIdentifier.from_issuer_public_key(self._ca_cert.public_key()),
-                critical=False
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(
+                    self._ca_cert.public_key()
+                ),
+                critical=False,
             )
 
             # Sign the certificate
             signed_cert = cert_builder.sign(
-                self._ca_key,
-                hashes.SHA256(),
-                backend=default_backend()
+                self._ca_key, hashes.SHA256(), backend=default_backend()
             )
 
-            logger.info(f"Successfully signed certificate (serial: {signed_cert.serial_number})")
+            logger.info(
+                f"Successfully signed certificate (serial: {signed_cert.serial_number})"
+            )
             return signed_cert
 
         except Exception as e:
@@ -470,21 +479,25 @@ class PrivateCAGenerator:
                     revoked_cert = x509.RevokedCertificateBuilder()
                     revoked_cert = revoked_cert.serial_number(serial)
                     revoked_cert = revoked_cert.revocation_date(datetime.utcnow())
-                    crl_builder = crl_builder.add_revoked_certificate(revoked_cert.build())
+                    crl_builder = crl_builder.add_revoked_certificate(
+                        revoked_cert.build()
+                    )
 
             # Sign CRL
             crl = crl_builder.sign(
                 private_key=self._ca_key,
                 algorithm=hashes.SHA256(),
-                backend=default_backend()
+                backend=default_backend(),
             )
 
             # Save CRL
             crl_pem = crl.public_bytes(serialization.Encoding.PEM)
-            with open(self.crl_path, 'wb') as f:
+            with open(self.crl_path, "wb") as f:
                 f.write(crl_pem)
 
-            logger.info(f"Generated CRL with {len(revoked_serials or [])} revoked certificates")
+            logger.info(
+                f"Generated CRL with {len(revoked_serials or [])} revoked certificates"
+            )
             return crl_pem
 
         except Exception as e:

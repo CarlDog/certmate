@@ -43,39 +43,39 @@ class OCSPResponder:
             certificates = self.client_cert_manager.list_client_certificates()
 
             for cert in certificates:
-                if int(cert.get('serial_number', 0)) == serial_number:
+                if int(cert.get("serial_number", 0)) == serial_number:
                     # Certificate found
-                    if cert.get('revoked'):
+                    if cert.get("revoked"):
                         return {
-                            'serial_number': serial_number,
-                            'status': 'revoked',
-                            'revoked_at': cert.get('revoked_at'),
-                            'reason': cert.get('reason_revoked', 'unspecified'),
-                            'this_update': datetime.utcnow().isoformat(),
-                            'next_update': None  # OCSP responses are generated on-demand
+                            "serial_number": serial_number,
+                            "status": "revoked",
+                            "revoked_at": cert.get("revoked_at"),
+                            "reason": cert.get("reason_revoked", "unspecified"),
+                            "this_update": datetime.utcnow().isoformat(),
+                            "next_update": None,  # OCSP responses are generated on-demand
                         }
                     else:
                         return {
-                            'serial_number': serial_number,
-                            'status': 'good',
-                            'this_update': datetime.utcnow().isoformat(),
-                            'next_update': None
+                            "serial_number": serial_number,
+                            "status": "good",
+                            "this_update": datetime.utcnow().isoformat(),
+                            "next_update": None,
                         }
 
             # Certificate not found
             return {
-                'serial_number': serial_number,
-                'status': 'unknown',
-                'this_update': datetime.utcnow().isoformat(),
-                'next_update': None
+                "serial_number": serial_number,
+                "status": "unknown",
+                "this_update": datetime.utcnow().isoformat(),
+                "next_update": None,
             }
 
         except Exception as e:
             logger.error(f"Error getting OCSP status: {str(e)}")
             return {
-                'serial_number': serial_number,
-                'status': 'unknown',
-                'error': str(e)
+                "serial_number": serial_number,
+                "status": "unknown",
+                "error": str(e),
             }
 
     def generate_ocsp_response(self, cert_status: dict) -> dict:
@@ -90,27 +90,26 @@ class OCSPResponder:
         """
         try:
             response = {
-                'response_status': 'successful',
-                'certificate_status': cert_status['status'],
-                'certificate_serial': cert_status['serial_number'],
-                'this_update': cert_status.get('this_update'),
-                'next_update': cert_status.get('next_update'),
-                'responder_name': 'CertMate OCSP Responder',
+                "response_status": "successful",
+                "certificate_status": cert_status["status"],
+                "certificate_serial": cert_status["serial_number"],
+                "this_update": cert_status.get("this_update"),
+                "next_update": cert_status.get("next_update"),
+                "responder_name": "CertMate OCSP Responder",
             }
 
-            if cert_status['status'] == 'revoked':
-                response['revocation_time'] = cert_status.get('revoked_at')
-                response['revocation_reason'] = cert_status.get('reason', 'unspecified')
+            if cert_status["status"] == "revoked":
+                response["revocation_time"] = cert_status.get("revoked_at")
+                response["revocation_reason"] = cert_status.get("reason", "unspecified")
 
-            logger.debug(f"Generated OCSP response for serial {cert_status['serial_number']}")
+            logger.debug(
+                f"Generated OCSP response for serial {cert_status['serial_number']}"
+            )
             return response
 
         except Exception as e:
             logger.error(f"Error generating OCSP response: {str(e)}")
-            return {
-                'response_status': 'internal_error',
-                'error': str(e)
-            }
+            return {"response_status": "internal_error", "error": str(e)}
 
 
 class CRLManager:
@@ -140,12 +139,14 @@ class CRLManager:
             List of serial numbers
         """
         try:
-            certificates = self.client_cert_manager.list_client_certificates(revoked=True)
+            certificates = self.client_cert_manager.list_client_certificates(
+                revoked=True
+            )
             serials = []
 
             for cert in certificates:
                 try:
-                    serial = int(cert.get('serial_number', 0))
+                    serial = int(cert.get("serial_number", 0))
                     if serial > 0:
                         serials.append(serial)
                 except (ValueError, TypeError):
@@ -170,7 +171,9 @@ class CRLManager:
             crl_pem = self.private_ca.generate_crl(revoked_serials)
 
             if crl_pem:
-                logger.info(f"Updated CRL with {len(revoked_serials)} revoked certificates")
+                logger.info(
+                    f"Updated CRL with {len(revoked_serials)} revoked certificates"
+                )
                 return crl_pem
             else:
                 logger.warning("Failed to generate CRL")
@@ -215,6 +218,7 @@ class CRLManager:
 
             # Convert PEM to DER
             from cryptography import x509
+
             crl = x509.load_pem_x509_crl(crl_pem)
 
             if crl:
@@ -238,21 +242,25 @@ class CRLManager:
 
             crl_pem = self.get_crl_pem()
             if not crl_pem:
-                return {'status': 'no_crl', 'message': 'No CRL available'}
+                return {"status": "no_crl", "message": "No CRL available"}
 
             crl = x509.load_pem_x509_crl(crl_pem)
 
             revoked_serials = self.get_revoked_serials()
 
             return {
-                'status': 'available',
-                'issuer': str(crl.issuer),
-                'last_update': crl.last_update_utc.isoformat() if crl.last_update_utc else None,
-                'next_update': crl.next_update_utc.isoformat() if crl.next_update_utc else None,
-                'revoked_count': len(revoked_serials),
-                'revoked_serials': revoked_serials
+                "status": "available",
+                "issuer": str(crl.issuer),
+                "last_update": crl.last_update_utc.isoformat()
+                if crl.last_update_utc
+                else None,
+                "next_update": crl.next_update_utc.isoformat()
+                if crl.next_update_utc
+                else None,
+                "revoked_count": len(revoked_serials),
+                "revoked_serials": revoked_serials,
             }
 
         except Exception as e:
             logger.error(f"Error getting CRL info: {str(e)}")
-            return {'status': 'error', 'error': str(e)}
+            return {"status": "error", "error": str(e)}

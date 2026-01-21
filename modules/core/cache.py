@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class CacheManager:
     """Class to handle cache management operations"""
-    
+
     def __init__(self, settings_manager):
         self.settings_manager = settings_manager
         self.deployment_cache = DeploymentStatusCache()
@@ -21,7 +21,7 @@ class CacheManager:
         """Update cache settings from configuration"""
         try:
             settings = self.settings_manager.load_settings()
-            cache_ttl = settings.get('cache_ttl', 300)
+            cache_ttl = settings.get("cache_ttl", 300)
             self.deployment_cache.set_ttl(cache_ttl)
             logger.info(f"Updated deployment cache TTL to {cache_ttl} seconds")
         except Exception as e:
@@ -33,11 +33,7 @@ class CacheManager:
             return self.deployment_cache.get_stats()
         except Exception as e:
             logger.error(f"Error getting cache stats: {e}")
-            return {
-                'total_entries': 0,
-                'current_ttl': 300,
-                'entries': []
-            }
+            return {"total_entries": 0, "current_ttl": 300, "entries": []}
 
     def clear_cache(self):
         """Clear all cache entries"""

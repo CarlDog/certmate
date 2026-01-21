@@ -30,13 +30,13 @@ class AuditLogger:
         self.file_handler = logging.FileHandler(self.audit_log_file)
         self.file_handler.setFormatter(
             logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
 
         # Create audit logger
-        self.audit_logger = logging.getLogger('certmate.audit')
+        self.audit_logger = logging.getLogger("certmate.audit")
         self.audit_logger.addHandler(self.file_handler)
         self.audit_logger.setLevel(logging.INFO)
 
@@ -49,7 +49,7 @@ class AuditLogger:
         details: Optional[Dict[str, Any]] = None,
         user: Optional[str] = None,
         ip_address: Optional[str] = None,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ) -> None:
         """
         Log a certificate operation.
@@ -66,15 +66,15 @@ class AuditLogger:
         """
         try:
             audit_entry = {
-                'timestamp': datetime.utcnow().isoformat(),
-                'operation': operation,
-                'resource_type': resource_type,
-                'resource_id': resource_id,
-                'status': status,
-                'user': user or 'system',
-                'ip_address': ip_address or 'unknown',
-                'details': details or {},
-                'error': error
+                "timestamp": datetime.utcnow().isoformat(),
+                "operation": operation,
+                "resource_type": resource_type,
+                "resource_id": resource_id,
+                "status": status,
+                "user": user or "system",
+                "ip_address": ip_address or "unknown",
+                "details": details or {},
+                "error": error,
             }
 
             # Log to audit file as JSON for easy parsing
@@ -89,20 +89,17 @@ class AuditLogger:
         common_name: str,
         usage: str,
         user: Optional[str] = None,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
     ) -> None:
         """Log certificate creation."""
         self.log_operation(
-            operation='create',
-            resource_type='certificate',
+            operation="create",
+            resource_type="certificate",
             resource_id=identifier,
-            status='success',
-            details={
-                'common_name': common_name,
-                'usage': usage
-            },
+            status="success",
+            details={"common_name": common_name, "usage": usage},
             user=user,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
     def log_certificate_revoked(
@@ -110,33 +107,33 @@ class AuditLogger:
         identifier: str,
         reason: str,
         user: Optional[str] = None,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
     ) -> None:
         """Log certificate revocation."""
         self.log_operation(
-            operation='revoke',
-            resource_type='certificate',
+            operation="revoke",
+            resource_type="certificate",
             resource_id=identifier,
-            status='success',
-            details={'reason': reason},
+            status="success",
+            details={"reason": reason},
             user=user,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
     def log_certificate_renewed(
         self,
         identifier: str,
         user: Optional[str] = None,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
     ) -> None:
         """Log certificate renewal."""
         self.log_operation(
-            operation='renew',
-            resource_type='certificate',
+            operation="renew",
+            resource_type="certificate",
             resource_id=identifier,
-            status='success',
+            status="success",
             user=user,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
     def log_certificate_downloaded(
@@ -144,17 +141,17 @@ class AuditLogger:
         identifier: str,
         file_type: str,
         user: Optional[str] = None,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
     ) -> None:
         """Log certificate file download."""
         self.log_operation(
-            operation='download',
-            resource_type='certificate',
+            operation="download",
+            resource_type="certificate",
             resource_id=identifier,
-            status='success',
-            details={'file_type': file_type},
+            status="success",
+            details={"file_type": file_type},
             user=user,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
     def log_batch_operation(
@@ -164,21 +161,17 @@ class AuditLogger:
         successful: int,
         failed: int,
         user: Optional[str] = None,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
     ) -> None:
         """Log batch operation (e.g., CSV import)."""
         self.log_operation(
-            operation=f'batch_{operation}',
-            resource_type='certificates',
-            resource_id='batch',
-            status='success',
-            details={
-                'total': total,
-                'successful': successful,
-                'failed': failed
-            },
+            operation=f"batch_{operation}",
+            resource_type="certificates",
+            resource_id="batch",
+            status="success",
+            details={"total": total, "successful": successful, "failed": failed},
             user=user,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
     def log_api_request(
@@ -188,21 +181,21 @@ class AuditLogger:
         status_code: int,
         user: Optional[str] = None,
         ip_address: Optional[str] = None,
-        response_time_ms: Optional[float] = None
+        response_time_ms: Optional[float] = None,
     ) -> None:
         """Log API request."""
         self.log_operation(
-            operation='api_request',
-            resource_type='endpoint',
+            operation="api_request",
+            resource_type="endpoint",
             resource_id=endpoint,
-            status='success' if status_code < 400 else 'failure',
+            status="success" if status_code < 400 else "failure",
             details={
-                'method': method,
-                'status_code': status_code,
-                'response_time_ms': response_time_ms
+                "method": method,
+                "status_code": status_code,
+                "response_time_ms": response_time_ms,
             },
             user=user,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
     def log_error(
@@ -212,17 +205,17 @@ class AuditLogger:
         resource_id: str,
         error_message: str,
         user: Optional[str] = None,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
     ) -> None:
         """Log operation error."""
         self.log_operation(
             operation=operation,
             resource_type=resource_type,
             resource_id=resource_id,
-            status='failure',
+            status="failure",
             user=user,
             ip_address=ip_address,
-            error=error_message
+            error=error_message,
         )
 
     def get_recent_entries(self, limit: int = 100) -> list:
@@ -240,14 +233,14 @@ class AuditLogger:
             if not self.audit_log_file.exists():
                 return entries
 
-            with open(self.audit_log_file, 'r') as f:
+            with open(self.audit_log_file, "r") as f:
                 lines = f.readlines()
                 # Get last 'limit' lines
                 for line in lines[-limit:]:
                     try:
                         # Extract JSON from log line (format: timestamp - logger - level - {json})
-                        if ' - INFO - ' in line:
-                            json_str = line.split(' - INFO - ', 1)[1].strip()
+                        if " - INFO - " in line:
+                            json_str = line.split(" - INFO - ", 1)[1].strip()
                             entries.append(json.loads(json_str))
                     except (json.JSONDecodeError, IndexError):
                         continue
@@ -273,13 +266,13 @@ class AuditLogger:
             if not self.audit_log_file.exists():
                 return entries
 
-            with open(self.audit_log_file, 'r') as f:
+            with open(self.audit_log_file, "r") as f:
                 for line in f:
                     try:
-                        if ' - INFO - ' in line:
-                            json_str = line.split(' - INFO - ', 1)[1].strip()
+                        if " - INFO - " in line:
+                            json_str = line.split(" - INFO - ", 1)[1].strip()
                             entry = json.loads(json_str)
-                            if entry.get('resource_id') == resource_id:
+                            if entry.get("resource_id") == resource_id:
                                 entries.append(entry)
                     except (json.JSONDecodeError, IndexError):
                         continue

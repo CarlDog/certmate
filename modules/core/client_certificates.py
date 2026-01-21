@@ -11,10 +11,7 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 from uuid import uuid4
 
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 from .private_ca import PrivateCAGenerator
 from .csr_handler import CSRHandler
@@ -72,7 +69,7 @@ class ClientCertificateManager:
         days_valid: int = 365,
         generate_key: bool = True,
         csr_pem: Optional[bytes] = None,
-        notes: str = ""
+        notes: str = "",
     ) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
         """
         Create a new client certificate.
@@ -97,11 +94,19 @@ class ClientCertificateManager:
                 return False, "Common name is required", None
             if len(common_name) > 64:
                 return False, "Common name must be 64 characters or less", None
-            
+
             # Validate days_valid
-            if not isinstance(days_valid, int) or days_valid < MIN_CERTIFICATE_VALIDITY_DAYS or days_valid > MAX_CERTIFICATE_VALIDITY_DAYS:
-                return False, f"days_valid must be between {MIN_CERTIFICATE_VALIDITY_DAYS} and {MAX_CERTIFICATE_VALIDITY_DAYS}", None
-            
+            if (
+                not isinstance(days_valid, int)
+                or days_valid < MIN_CERTIFICATE_VALIDITY_DAYS
+                or days_valid > MAX_CERTIFICATE_VALIDITY_DAYS
+            ):
+                return (
+                    False,
+                    f"days_valid must be between {MIN_CERTIFICATE_VALIDITY_DAYS} and {MAX_CERTIFICATE_VALIDITY_DAYS}",
+                    None,
+                )
+
             # Generate unique identifier
             identifier = f"{common_name.lower().replace(' ', '-')}-{uuid4().hex[:8]}"
 
@@ -119,7 +124,7 @@ class ClientCertificateManager:
                     organizational_unit=organizational_unit,
                     email=email,
                     country="CH",
-                    state="Switzerland"
+                    state="Switzerland",
                 )
 
                 if error:
@@ -130,9 +135,9 @@ class ClientCertificateManager:
                 csr_path = cert_subdir / f"{identifier}.csr"
                 key_path = cert_subdir / f"{identifier}.key"
 
-                with open(csr_path, 'wb') as f:
+                with open(csr_path, "wb") as f:
                     f.write(csr_pem)
-                with open(key_path, 'wb') as f:
+                with open(key_path, "wb") as f:
                     f.write(key_pem)
 
                 os.chmod(key_path, 0o600)
@@ -149,7 +154,7 @@ class ClientCertificateManager:
 
                 # Save provided CSR
                 csr_path = cert_subdir / f"{identifier}.csr"
-                with open(csr_path, 'wb') as f:
+                with open(csr_path, "wb") as f:
                     f.write(csr_pem)
 
             # Load CSR from saved file
@@ -163,9 +168,7 @@ class ClientCertificateManager:
 
             # Sign the certificate with CA
             signed_cert = self.private_ca.sign_certificate_request(
-                csr=csr_obj,
-                days_valid=days_valid,
-                extended_key_usage=["clientAuth"]
+                csr=csr_obj, days_valid=days_valid, extended_key_usage=["clientAuth"]
             )
 
             if not signed_cert:
@@ -174,7 +177,7 @@ class ClientCertificateManager:
 
             # Save signed certificate
             cert_path = cert_subdir / f"{identifier}.crt"
-            with open(cert_path, 'wb') as f:
+            with open(cert_path, "wb") as f:
                 f.write(signed_cert.public_bytes(serialization.Encoding.PEM))
 
             # Create metadata
@@ -189,7 +192,9 @@ class ClientCertificateManager:
                 "key_usage": ["digitalSignature", "keyEncipherment"],
                 "extended_key_usage": ["clientAuth"],
                 "created_at": datetime.utcnow().isoformat(),
-                "expires_at": (datetime.utcnow() + timedelta(days=days_valid)).isoformat(),
+                "expires_at": (
+                    datetime.utcnow() + timedelta(days=days_valid)
+                ).isoformat(),
                 "serial_number": str(signed_cert.serial_number),
                 "renewal_enabled": True,
                 "renewal_threshold_days": 30,
@@ -199,12 +204,12 @@ class ClientCertificateManager:
                 "revoked_at": None,
                 "reason_revoked": None,
                 "crl_entry_serial": None,
-                "notes": notes
+                "notes": notes,
             }
 
             # Save metadata
             metadata_path = cert_subdir / "metadata.json"
-            with open(metadata_path, 'w') as f:
+            with open(metadata_path, "w") as f:
                 json.dump(metadata, f, indent=2)
 
             logger.info(f"Successfully created client certificate: {identifier}")
@@ -214,11 +219,13 @@ class ClientCertificateManager:
                 "identifier": identifier,
                 "paths": {
                     "certificate": str(cert_path),
-                    "private_key": str(cert_subdir / f"{identifier}.key") if generate_key else None,
+                    "private_key": str(cert_subdir / f"{identifier}.key")
+                    if generate_key
+                    else None,
                     "csr": str(cert_subdir / f"{identifier}.csr"),
-                    "metadata": str(metadata_path)
+                    "metadata": str(metadata_path),
                 },
-                "metadata": metadata
+                "metadata": metadata,
             }
 
             return True, None, cert_data
@@ -231,7 +238,7 @@ class ClientCertificateManager:
         self,
         cert_usage: Optional[str] = None,
         revoked: Optional[bool] = None,
-        search_term: Optional[str] = None
+        search_term: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         List client certificates with optional filtering.
@@ -251,7 +258,11 @@ class ClientCertificateManager:
             if cert_usage:
                 dirs_to_scan = [self._get_cert_subdir(cert_usage)]
             else:
-                dirs_to_scan = [self.vpn_certs_dir, self.api_certs_dir, self.other_certs_dir]
+                dirs_to_scan = [
+                    self.vpn_certs_dir,
+                    self.api_certs_dir,
+                    self.other_certs_dir,
+                ]
 
             # Scan directories
             for cert_dir in dirs_to_scan:
@@ -260,7 +271,7 @@ class ClientCertificateManager:
 
                 for metadata_file in cert_dir.glob("*/metadata.json"):
                     try:
-                        with open(metadata_file, 'r') as f:
+                        with open(metadata_file, "r") as f:
                             metadata = json.load(f)
 
                         # Apply filters
@@ -282,10 +293,7 @@ class ClientCertificateManager:
                         continue
 
             # Sort by creation date (newest first)
-            certificates.sort(
-                key=lambda x: x.get("created_at", ""),
-                reverse=True
-            )
+            certificates.sort(key=lambda x: x.get("created_at", ""), reverse=True)
 
             return certificates
 
@@ -305,8 +313,10 @@ class ClientCertificateManager:
         """
         try:
             # Search for metadata file
-            for metadata_file in self.client_certs_dir.glob(f"*/{identifier}/metadata.json"):
-                with open(metadata_file, 'r') as f:
+            for metadata_file in self.client_certs_dir.glob(
+                f"*/{identifier}/metadata.json"
+            ):
+                with open(metadata_file, "r") as f:
                     return json.load(f)
 
             logger.warning(f"Certificate not found: {identifier}")
@@ -316,7 +326,9 @@ class ClientCertificateManager:
             logger.error(f"Error getting certificate metadata: {str(e)}")
             return None
 
-    def revoke_certificate(self, identifier: str, reason: str = "unspecified") -> Tuple[bool, Optional[str]]:
+    def revoke_certificate(
+        self, identifier: str, reason: str = "unspecified"
+    ) -> Tuple[bool, Optional[str]]:
         """
         Revoke a client certificate.
 
@@ -339,8 +351,10 @@ class ClientCertificateManager:
             metadata["reason_revoked"] = reason
 
             # Save updated metadata
-            for metadata_file in self.client_certs_dir.glob(f"*/{identifier}/metadata.json"):
-                with open(metadata_file, 'w') as f:
+            for metadata_file in self.client_certs_dir.glob(
+                f"*/{identifier}/metadata.json"
+            ):
+                with open(metadata_file, "w") as f:
                     json.dump(metadata, f, indent=2)
 
                 logger.info(f"Revoked certificate: {identifier} (reason: {reason})")
@@ -359,7 +373,9 @@ class ClientCertificateManager:
             logger.error(f"Error revoking certificate: {str(e)}")
             return False, str(e)
 
-    def renew_certificate(self, identifier: str) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
+    def renew_certificate(
+        self, identifier: str
+    ) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
         """
         Renew a client certificate (create new one with same identity).
 
@@ -387,7 +403,7 @@ class ClientCertificateManager:
                 organizational_unit=old_metadata.get("organizational_unit", "Users"),
                 cert_usage=old_metadata.get("cert_usage", "api-mtls"),
                 generate_key=True,  # Always generate new key on renewal
-                notes=f"Renewal of {identifier}"
+                notes=f"Renewal of {identifier}",
             )
 
             if success:
@@ -395,11 +411,15 @@ class ClientCertificateManager:
                 old_metadata["superseded_by"] = cert_data["identifier"]
                 old_metadata["superseded_at"] = datetime.utcnow().isoformat()
 
-                for metadata_file in self.client_certs_dir.glob(f"*/{identifier}/metadata.json"):
-                    with open(metadata_file, 'w') as f:
+                for metadata_file in self.client_certs_dir.glob(
+                    f"*/{identifier}/metadata.json"
+                ):
+                    with open(metadata_file, "w") as f:
                         json.dump(old_metadata, f, indent=2)
 
-                logger.info(f"Renewed certificate: {identifier} -> {cert_data['identifier']}")
+                logger.info(
+                    f"Renewed certificate: {identifier} -> {cert_data['identifier']}"
+                )
                 return True, None, cert_data
 
             return False, error, None
@@ -408,7 +428,9 @@ class ClientCertificateManager:
             logger.error(f"Error renewing certificate: {str(e)}")
             return False, str(e), None
 
-    def get_certificate_file(self, identifier: str, file_type: str = "crt") -> Optional[bytes]:
+    def get_certificate_file(
+        self, identifier: str, file_type: str = "crt"
+    ) -> Optional[bytes]:
         """
         Get a certificate file (crt, key, or csr).
 
@@ -469,7 +491,9 @@ class ClientCertificateManager:
                     else:
                         logger.warning(f"Failed to auto-renew {identifier}: {error}")
 
-            logger.info(f"Certificate renewal check: {checked_count} checked, {renewed_count} renewed")
+            logger.info(
+                f"Certificate renewal check: {checked_count} checked, {renewed_count} renewed"
+            )
             return checked_count, renewed_count, renewed_identifiers
 
         except Exception as e:
@@ -506,7 +530,9 @@ class ClientCertificateManager:
                 "revoked": len(revoked_certs),
                 "by_usage": by_usage,
                 "by_organization": by_org,
-                "ca_status": "active" if self.private_ca.is_ca_loaded() else "not_loaded"
+                "ca_status": "active"
+                if self.private_ca.is_ca_loaded()
+                else "not_loaded",
             }
 
         except Exception as e:

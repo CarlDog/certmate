@@ -4,13 +4,9 @@ Comprehensive test suite for client certificate functionality
 Tests Phase 1-3 implementation (CA, Client Certs, OCSP/CRL)
 """
 
-import os
 import sys
-import json
 import tempfile
-import shutil
 from pathlib import Path
-from datetime import datetime, timedelta
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -23,6 +19,7 @@ from modules.core.ocsp_crl import OCSPResponder, CRLManager
 
 class TestResults:
     """Track test results"""
+
     def __init__(self):
         self.passed = 0
         self.failed = 0
@@ -42,7 +39,7 @@ class TestResults:
         print(f"\n{'='*60}")
         print(f"Test Results: {self.passed}/{total} passed")
         if self.failed > 0:
-            print(f"\nFailed Tests:")
+            print("\nFailed Tests:")
             for name, error in self.errors:
                 print(f"  - {name}: {error}")
         print(f"{'='*60}")
@@ -103,9 +100,7 @@ def test_csr_handler():
     try:
         # Test CSR creation (returns csr_pem, key_pem, error)
         csr_pem, key_pem, error = CSRHandler.create_csr(
-            common_name="test.example.com",
-            organization="Test Org",
-            key_size=2048
+            common_name="test.example.com", organization="Test Org", key_size=2048
         )
 
         if csr_pem and key_pem and not error:
@@ -114,13 +109,13 @@ def test_csr_handler():
             results.add_fail("CSR creation", f"Empty PEM data or error: {error}")
 
         # Verify CSR is valid PEM
-        if csr_pem.startswith(b'-----BEGIN'):
+        if csr_pem.startswith(b"-----BEGIN"):
             results.add_pass("CSR PEM format validation")
         else:
             results.add_fail("CSR PEM format", "Invalid PEM header")
 
         # Verify key is valid PEM
-        if key_pem.startswith(b'-----BEGIN'):
+        if key_pem.startswith(b"-----BEGIN"):
             results.add_pass("Key PEM format validation")
         else:
             results.add_fail("Key PEM format", "Invalid PEM header")
@@ -135,7 +130,7 @@ def test_csr_handler():
         # Test CSR info extraction
         if csr_obj:
             info = CSRHandler.get_csr_info(csr_obj)
-            if info and info.get('common_name') == 'test.example.com':
+            if info and info.get("common_name") == "test.example.com":
                 results.add_pass("CSR info extraction")
             else:
                 results.add_fail("CSR info extraction", f"Invalid info: {info}")
@@ -171,12 +166,12 @@ def test_client_certificate_manager():
                 organization="Test Org",
                 cert_usage="api-mtls",
                 days_valid=365,
-                generate_key=True
+                generate_key=True,
             )
 
             if success and cert_data:
                 results.add_pass("Certificate creation")
-                identifier = cert_data['identifier']
+                identifier = cert_data["identifier"]
             else:
                 results.add_fail("Certificate creation", error)
                 return results
@@ -193,24 +188,26 @@ def test_client_certificate_manager():
             if len(certs_mtls) == 1:
                 results.add_pass("Certificate filtering by usage")
             else:
-                results.add_fail("Certificate filtering", f"Expected 1, got {len(certs_mtls)}")
+                results.add_fail(
+                    "Certificate filtering", f"Expected 1, got {len(certs_mtls)}"
+                )
 
             # Test metadata retrieval
             metadata = manager.get_certificate_metadata(identifier)
-            if metadata and metadata['common_name'] == 'user1.example.com':
+            if metadata and metadata["common_name"] == "user1.example.com":
                 results.add_pass("Certificate metadata retrieval")
             else:
                 results.add_fail("Metadata retrieval", f"Invalid metadata: {metadata}")
 
             # Test certificate download
-            cert_file = manager.get_certificate_file(identifier, 'crt')
-            if cert_file and b'BEGIN CERTIFICATE' in cert_file:
+            cert_file = manager.get_certificate_file(identifier, "crt")
+            if cert_file and b"BEGIN CERTIFICATE" in cert_file:
                 results.add_pass("Certificate file download (CRT)")
             else:
                 results.add_fail("Certificate download", "Invalid certificate content")
 
-            key_file = manager.get_certificate_file(identifier, 'key')
-            if key_file and b'BEGIN' in key_file and b'PRIVATE KEY' in key_file:
+            key_file = manager.get_certificate_file(identifier, "key")
+            if key_file and b"BEGIN" in key_file and b"PRIVATE KEY" in key_file:
                 results.add_pass("Certificate file download (KEY)")
             else:
                 results.add_fail("Key download", "Invalid key content")
@@ -227,7 +224,9 @@ def test_client_certificate_manager():
             if len(certs_revoked) == 1:
                 results.add_pass("Revoked certificate filtering")
             else:
-                results.add_fail("Revoked filter", f"Expected 1, got {len(certs_revoked)}")
+                results.add_fail(
+                    "Revoked filter", f"Expected 1, got {len(certs_revoked)}"
+                )
 
             # Create another certificate for renewal test
             success, error, cert_data2 = manager.create_client_certificate(
@@ -236,10 +235,10 @@ def test_client_certificate_manager():
                 organization="Test Org",
                 cert_usage="vpn",
                 days_valid=365,
-                generate_key=True
+                generate_key=True,
             )
             if success:
-                identifier2 = cert_data2['identifier']
+                identifier2 = cert_data2["identifier"]
 
                 # Test renewal
                 success, error, renewed_data = manager.renew_certificate(identifier2)
@@ -250,7 +249,7 @@ def test_client_certificate_manager():
 
             # Test statistics
             stats = manager.get_statistics()
-            if stats and 'total' in stats:
+            if stats and "total" in stats:
                 results.add_pass("Certificate statistics")
             else:
                 results.add_fail("Statistics", f"Invalid stats: {stats}")
@@ -283,14 +282,14 @@ def test_ocsp_responder():
                 organization="Test",
                 cert_usage="api-mtls",
                 days_valid=365,
-                generate_key=True
+                generate_key=True,
             )
 
             if not success:
                 results.add_fail("OCSP setup", "Failed to create certificate")
                 return results
 
-            serial = int(cert_data.get('serial_number', 1))
+            serial = int(cert_data.get("serial_number", 1))
 
             # Initialize OCSP responder
             ocsp = OCSPResponder(ca, manager)
@@ -299,39 +298,43 @@ def test_ocsp_responder():
             certs = manager.list_client_certificates()
             if len(certs) > 0:
                 # Get the actual serial from metadata
-                metadata = manager.get_certificate_metadata(cert_data['identifier'])
+                metadata = manager.get_certificate_metadata(cert_data["identifier"])
                 if metadata:
-                    serial = int(metadata.get('serial_number', serial))
+                    serial = int(metadata.get("serial_number", serial))
                     status = ocsp.get_cert_status(serial)
-                    if status and status['status'] == 'good':
+                    if status and status["status"] == "good":
                         results.add_pass("OCSP good status query")
                     else:
                         results.add_fail("OCSP good status", f"Unexpected: {status}")
                 else:
-                    results.add_fail("OCSP metadata", "Could not get certificate metadata")
+                    results.add_fail(
+                        "OCSP metadata", "Could not get certificate metadata"
+                    )
             else:
                 results.add_fail("OCSP setup", "Certificate not created")
 
             # Test unknown status
             unknown_status = ocsp.get_cert_status(9999)
-            if unknown_status and unknown_status['status'] == 'unknown':
+            if unknown_status and unknown_status["status"] == "unknown":
                 results.add_pass("OCSP unknown status query")
             else:
                 results.add_fail("OCSP unknown status", f"Unexpected: {unknown_status}")
 
             # Revoke and test revoked status
-            manager.revoke_certificate(cert_data['identifier'], reason="Test")
+            manager.revoke_certificate(cert_data["identifier"], reason="Test")
 
             # Re-query OCSP for revoked status
             revoked_status = ocsp.get_cert_status(serial)
-            if revoked_status and revoked_status['status'] == 'revoked':
+            if revoked_status and revoked_status["status"] == "revoked":
                 results.add_pass("OCSP revoked status query")
             else:
-                results.add_fail("OCSP revoked status", f"Expected revoked, got: {revoked_status}")
+                results.add_fail(
+                    "OCSP revoked status", f"Expected revoked, got: {revoked_status}"
+                )
 
             # Test OCSP response generation
             response = ocsp.generate_ocsp_response(status)
-            if response and response.get('response_status') == 'successful':
+            if response and response.get("response_status") == "successful":
                 results.add_pass("OCSP response generation")
             else:
                 results.add_fail("OCSP response", f"Invalid response: {response}")
@@ -363,7 +366,7 @@ def test_crl_manager():
                 organization="Test",
                 cert_usage="api-mtls",
                 days_valid=365,
-                generate_key=True
+                generate_key=True,
             )
 
             success, error, cert_data2 = manager.create_client_certificate(
@@ -371,7 +374,7 @@ def test_crl_manager():
                 organization="Test",
                 cert_usage="vpn",
                 days_valid=365,
-                generate_key=True
+                generate_key=True,
             )
 
             if not (success and cert_data1 and cert_data2):
@@ -379,8 +382,8 @@ def test_crl_manager():
                 return results
 
             # Revoke both
-            manager.revoke_certificate(cert_data1['identifier'])
-            manager.revoke_certificate(cert_data2['identifier'])
+            manager.revoke_certificate(cert_data1["identifier"])
+            manager.revoke_certificate(cert_data2["identifier"])
 
             # Initialize CRL manager
             crl_dir = Path(tmpdir) / "crl"
@@ -395,14 +398,14 @@ def test_crl_manager():
 
             # Test CRL update
             crl_pem = crl.update_crl()
-            if crl_pem and b'BEGIN X509 CRL' in crl_pem:
+            if crl_pem and b"BEGIN X509 CRL" in crl_pem:
                 results.add_pass("CRL generation")
             else:
                 results.add_fail("CRL generation", "Invalid CRL content")
 
             # Test CRL PEM retrieval
             crl_pem = crl.get_crl_pem()
-            if crl_pem and b'BEGIN X509 CRL' in crl_pem:
+            if crl_pem and b"BEGIN X509 CRL" in crl_pem:
                 results.add_pass("CRL PEM retrieval")
             else:
                 results.add_fail("CRL PEM retrieval", "Invalid PEM")
@@ -416,7 +419,7 @@ def test_crl_manager():
 
             # Test CRL info
             info = crl.get_crl_info()
-            if info and info.get('status') == 'available':
+            if info and info.get("status") == "available":
                 results.add_pass("CRL info retrieval")
             else:
                 results.add_fail("CRL info", f"Invalid info: {info}")
@@ -450,7 +453,7 @@ def test_batch_operations():
                     organization="Test Org",
                     cert_usage="api-mtls" if i % 2 == 0 else "vpn",
                     days_valid=365,
-                    generate_key=True
+                    generate_key=True,
                 )
                 if success:
                     certs_created += 1
@@ -468,7 +471,9 @@ def test_batch_operations():
                 results.add_fail("Search", f"Expected 1, got {len(certs)}")
 
             # Test multi-filter
-            certs = manager.list_client_certificates(cert_usage="api-mtls", revoked=False)
+            certs = manager.list_client_certificates(
+                cert_usage="api-mtls", revoked=False
+            )
             if len(certs) >= 2:
                 results.add_pass("Multi-filter certificate listing")
             else:
@@ -482,9 +487,9 @@ def test_batch_operations():
 
 def main():
     """Run all tests"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🧪 CertMate Client Certificate Comprehensive Test Suite")
-    print("="*60)
+    print("=" * 60)
 
     all_results = []
 
@@ -501,9 +506,9 @@ def main():
     total_failed = sum(r.failed for r in all_results)
     total = total_passed + total_failed
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print(f"📊 Overall Results: {total_passed}/{total} tests passed")
-    print("="*60)
+    print("=" * 60)
 
     if total_failed > 0:
         print(f"\n⚠️  {total_failed} test(s) failed. Please review above.")

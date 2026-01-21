@@ -23,7 +23,9 @@ class CSRHandler:
     """
 
     @staticmethod
-    def validate_csr_pem(csr_pem: bytes) -> Tuple[bool, Optional[str], Optional[x509.CertificateSigningRequest]]:
+    def validate_csr_pem(
+        csr_pem: bytes,
+    ) -> Tuple[bool, Optional[str], Optional[x509.CertificateSigningRequest]]:
         """
         Validate a PEM-encoded CSR.
 
@@ -106,33 +108,37 @@ class CSRHandler:
 
             # Get key size
             public_key = csr.public_key()
-            key_size = public_key.key_size if hasattr(public_key, 'key_size') else None
+            key_size = public_key.key_size if hasattr(public_key, "key_size") else None
 
             # Extract SAN extension
             san_list = []
             try:
-                san_ext = csr.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+                san_ext = csr.extensions.get_extension_for_oid(
+                    ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+                )
                 for name in san_ext.value:
                     if isinstance(name, x509.DNSName):
-                        san_list.append(('DNS', name.value))
+                        san_list.append(("DNS", name.value))
                     elif isinstance(name, x509.RFC822Name):
-                        san_list.append(('Email', name.value))
+                        san_list.append(("Email", name.value))
                     elif isinstance(name, x509.IPAddress):
-                        san_list.append(('IP', str(name.value)))
+                        san_list.append(("IP", str(name.value)))
             except x509.ExtensionNotFound:
                 pass
 
             return {
-                'common_name': common_name,
-                'organization': organization,
-                'organizational_unit': organizational_unit,
-                'email': email,
-                'country': country,
-                'state': state,
-                'locality': locality,
-                'key_size': key_size,
-                'subject_alt_names': san_list,
-                'signature_algorithm': csr.signature_algorithm_oid._name if csr.signature_algorithm_oid else "Unknown"
+                "common_name": common_name,
+                "organization": organization,
+                "organizational_unit": organizational_unit,
+                "email": email,
+                "country": country,
+                "state": state,
+                "locality": locality,
+                "key_size": key_size,
+                "subject_alt_names": san_list,
+                "signature_algorithm": csr.signature_algorithm_oid._name
+                if csr.signature_algorithm_oid
+                else "Unknown",
             }
 
         except Exception as e:
@@ -149,7 +155,7 @@ class CSRHandler:
         locality: str = "",
         email: str = "",
         alternative_names: list = None,
-        key_size: int = 2048
+        key_size: int = 2048,
     ) -> Tuple[Optional[bytes], Optional[bytes], Optional[str]]:
         """
         Create a new CSR with private key.
@@ -181,9 +187,7 @@ class CSRHandler:
 
             # Generate private key
             private_key = rsa.generate_private_key(
-                public_exponent=65537,
-                key_size=key_size,
-                backend=default_backend()
+                public_exponent=65537, key_size=key_size, backend=default_backend()
             )
 
             # Build subject
@@ -191,12 +195,16 @@ class CSRHandler:
                 x509.NameAttribute(NameOID.COUNTRY_NAME, country),
                 x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, state),
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, organization),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, organizational_unit),
+                x509.NameAttribute(
+                    NameOID.ORGANIZATIONAL_UNIT_NAME, organizational_unit
+                ),
                 x509.NameAttribute(NameOID.COMMON_NAME, common_name),
             ]
 
             if locality:
-                subject_attrs.insert(2, x509.NameAttribute(NameOID.LOCALITY_NAME, locality))
+                subject_attrs.insert(
+                    2, x509.NameAttribute(NameOID.LOCALITY_NAME, locality)
+                )
 
             if email:
                 subject_attrs.append(x509.NameAttribute(NameOID.EMAIL_ADDRESS, email))
@@ -211,8 +219,7 @@ class CSRHandler:
             if alternative_names:
                 san_list = [x509.DNSName(name) for name in alternative_names]
                 csr_builder = csr_builder.add_extension(
-                    x509.SubjectAlternativeName(san_list),
-                    critical=False
+                    x509.SubjectAlternativeName(san_list), critical=False
                 )
 
             # Add key usage extension
@@ -228,14 +235,12 @@ class CSRHandler:
                     encipher_only=False,
                     decipher_only=False,
                 ),
-                critical=True
+                critical=True,
             )
 
             # Sign CSR with private key
             csr = csr_builder.sign(
-                private_key,
-                hashes.SHA256(),
-                backend=default_backend()
+                private_key, hashes.SHA256(), backend=default_backend()
             )
 
             # Export CSR as PEM
@@ -245,7 +250,7 @@ class CSRHandler:
             private_key_pem = private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption()
+                encryption_algorithm=serialization.NoEncryption(),
             )
 
             logger.info(f"Successfully created CSR for {common_name}")
@@ -257,10 +262,7 @@ class CSRHandler:
 
     @staticmethod
     def save_csr_and_key(
-        csr_pem: bytes,
-        private_key_pem: bytes,
-        output_dir: Path,
-        identifier: str
+        csr_pem: bytes, private_key_pem: bytes, output_dir: Path, identifier: str
     ) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Save CSR and private key to files.
@@ -281,16 +283,17 @@ class CSRHandler:
             key_path = output_dir / f"{identifier}.key"
 
             # Save CSR
-            with open(csr_path, 'wb') as f:
+            with open(csr_path, "wb") as f:
                 f.write(csr_pem)
             logger.debug(f"Saved CSR to {csr_path}")
 
             # Save private key
-            with open(key_path, 'wb') as f:
+            with open(key_path, "wb") as f:
                 f.write(private_key_pem)
 
             # Restrict key permissions
             import os
+
             os.chmod(key_path, 0o600)
             logger.debug(f"Saved private key to {key_path}")
 
@@ -301,7 +304,9 @@ class CSRHandler:
             return False, str(e), None
 
     @staticmethod
-    def load_csr_from_file(csr_path: Path) -> Tuple[bool, Optional[str], Optional[x509.CertificateSigningRequest]]:
+    def load_csr_from_file(
+        csr_path: Path,
+    ) -> Tuple[bool, Optional[str], Optional[x509.CertificateSigningRequest]]:
         """
         Load CSR from file.
 

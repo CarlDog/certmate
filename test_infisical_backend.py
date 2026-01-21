@@ -10,7 +10,7 @@ Prerequisites:
 Configuration:
     Set environment variables or edit the config below:
     - INFISICAL_SITE_URL (e.g., https://infisical.yourserver.com)
-    - INFISICAL_CLIENT_ID 
+    - INFISICAL_CLIENT_ID
     - INFISICAL_CLIENT_SECRET
     - INFISICAL_PROJECT_ID
     - INFISICAL_ENVIRONMENT (default: prod)
@@ -21,22 +21,22 @@ Usage:
 
 import os
 import sys
-import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+
 # ANSI Colors
 class Colors:
-    RESET = '\033[0m'
-    BOLD = '\033[1m'
-    GREEN = '\033[92m'
-    RED = '\033[91m'
-    YELLOW = '\033[93m'
-    CYAN = '\033[96m'
-    GRAY = '\033[90m'
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    CYAN = "\033[96m"
+    GRAY = "\033[90m"
 
 
 def print_header(text):
@@ -67,31 +67,33 @@ def print_info(text):
 
 def test_infisical_backend():
     """Test the Infisical storage backend"""
-    
+
     print_header("Infisical Storage Backend Test")
-    
+
     # ==========================================================================
     # Configuration
     # ==========================================================================
-    
+
     config = {
-        'site_url': os.getenv('INFISICAL_SITE_URL', 'https://app.infisical.com'),
-        'client_id': os.getenv('INFISICAL_CLIENT_ID'),
-        'client_secret': os.getenv('INFISICAL_CLIENT_SECRET'),
-        'project_id': os.getenv('INFISICAL_PROJECT_ID'),
-        'environment': os.getenv('INFISICAL_ENVIRONMENT', 'prod'),
+        "site_url": os.getenv("INFISICAL_SITE_URL", "https://app.infisical.com"),
+        "client_id": os.getenv("INFISICAL_CLIENT_ID"),
+        "client_secret": os.getenv("INFISICAL_CLIENT_SECRET"),
+        "project_id": os.getenv("INFISICAL_PROJECT_ID"),
+        "environment": os.getenv("INFISICAL_ENVIRONMENT", "prod"),
     }
-    
+
     print_step("Configuration:")
     print(f"      Site URL:    {config['site_url']}")
     print(f"      Project ID:  {config['project_id'] or '(not set)'}")
     print(f"      Environment: {config['environment']}")
-    print(f"      Client ID:   {'***' + config['client_id'][-4:] if config['client_id'] else '(not set)'}")
+    print(
+        f"      Client ID:   {'***' + config['client_id'][-4:] if config['client_id'] else '(not set)'}"
+    )
     print(f"      Secret:      {'***' if config['client_secret'] else '(not set)'}")
     print()
-    
+
     # Check required config
-    if not all([config['client_id'], config['client_secret'], config['project_id']]):
+    if not all([config["client_id"], config["client_secret"], config["project_id"]]):
         print_error("Missing required configuration!")
         print_warning("Set environment variables:")
         print("      export INFISICAL_SITE_URL=https://your-infisical.com")
@@ -99,70 +101,72 @@ def test_infisical_backend():
         print("      export INFISICAL_CLIENT_SECRET=your-client-secret")
         print("      export INFISICAL_PROJECT_ID=your-project-id")
         return False
-    
+
     # ==========================================================================
     # Check infisical-python package
     # ==========================================================================
-    
+
     print_step("Checking infisical-python package...")
     try:
-        from infisical import InfisicalClient, ClientSettings
+        import infisical  # noqa: F401
+
         print_success("infisical-python is installed")
     except ImportError:
         print_error("infisical-python not installed!")
         print_warning("Install with: pip install infisical-python")
         return False
-    
+
     # ==========================================================================
     # Initialize Backend
     # ==========================================================================
-    
+
     print_step("Initializing InfisicalBackend...")
     try:
         from modules.core.storage_backends import InfisicalBackend
+
         backend = InfisicalBackend(config)
         print_success("Backend initialized")
     except Exception as e:
         print_error(f"Failed to initialize: {e}")
         return False
-    
+
     # ==========================================================================
     # Test Connection
     # ==========================================================================
-    
+
     print_step("Testing connection to Infisical...")
     try:
-        client = backend._get_client()
+        backend._get_client()
         print_success("Connected to Infisical!")
     except Exception as e:
         print_error(f"Connection failed: {e}")
         return False
-    
+
     # ==========================================================================
     # Test Store Certificate
     # ==========================================================================
-    
+
     test_domain = f"test-{datetime.now().strftime('%Y%m%d%H%M%S')}.certmate.local"
-    
+
     print_step(f"Storing test certificate for: {test_domain}")
-    
+
     # Create fake certificate data
     test_cert_files = {
-        'cert.pem': b'-----BEGIN CERTIFICATE-----\nTEST_CERT_DATA\n-----END CERTIFICATE-----',
-        'privkey.pem': b'-----BEGIN PRIVATE KEY-----\nTEST_KEY_DATA\n-----END PRIVATE KEY-----',
-        'chain.pem': b'-----BEGIN CERTIFICATE-----\nTEST_CHAIN_DATA\n-----END CERTIFICATE-----',
-        'fullchain.pem': b'-----BEGIN CERTIFICATE-----\nTEST_FULLCHAIN_DATA\n-----END CERTIFICATE-----',
+        "cert.pem": b"-----BEGIN CERTIFICATE-----\nTEST_CERT_DATA\n-----END CERTIFICATE-----",
+        "privkey.pem": b"-----BEGIN PRIVATE KEY-----\nTEST_KEY_DATA\n-----END PRIVATE KEY-----",
+        "chain.pem": b"-----BEGIN CERTIFICATE-----\nTEST_CHAIN_DATA\n-----END CERTIFICATE-----",
+        "fullchain.pem": b"-----BEGIN CERTIFICATE-----\nTEST_FULLCHAIN_DATA\n-----END CERTIFICATE-----",
     }
-    
+
     test_metadata = {
-        'domain': test_domain,
-        'created_at': datetime.now().isoformat(),
-        'expires_at': '2027-01-17T00:00:00',
-        'issuer': 'CertMate Test',
-        'dns_provider': 'test',
-        'test': True
+        "domain": test_domain,
+        "created_at": datetime.now().isoformat(),
+        "expires_at": "2027-01-17T00:00:00",
+        "issuer": "CertMate Test",
+        "dns_provider": "test",
+        "test": True,
     }
-    
+
     try:
         success = backend.store_certificate(test_domain, test_cert_files, test_metadata)
         if success:
@@ -173,11 +177,11 @@ def test_infisical_backend():
     except Exception as e:
         print_error(f"Store failed: {e}")
         return False
-    
+
     # ==========================================================================
     # Test Certificate Exists
     # ==========================================================================
-    
+
     print_step("Checking if certificate exists...")
     try:
         exists = backend.certificate_exists(test_domain)
@@ -189,11 +193,11 @@ def test_infisical_backend():
     except Exception as e:
         print_error(f"Exists check failed: {e}")
         return False
-    
+
     # ==========================================================================
     # Test List Certificates
     # ==========================================================================
-    
+
     print_step("Listing certificates...")
     try:
         domains = backend.list_certificates()
@@ -201,15 +205,17 @@ def test_infisical_backend():
         for d in domains:
             print(f"        - {d}")
         if test_domain not in domains:
-            print_warning(f"Test domain {test_domain} not in list (may be naming issue)")
+            print_warning(
+                f"Test domain {test_domain} not in list (may be naming issue)"
+            )
     except Exception as e:
         print_error(f"List failed: {e}")
         return False
-    
+
     # ==========================================================================
     # Test Retrieve Certificate
     # ==========================================================================
-    
+
     print_step("Retrieving certificate...")
     try:
         result = backend.retrieve_certificate(test_domain)
@@ -227,11 +233,11 @@ def test_infisical_backend():
     except Exception as e:
         print_error(f"Retrieve failed: {e}")
         return False
-    
+
     # ==========================================================================
     # Test Delete Certificate
     # ==========================================================================
-    
+
     print_step(f"Deleting test certificate: {test_domain}")
     try:
         success = backend.delete_certificate(test_domain)
@@ -242,7 +248,7 @@ def test_infisical_backend():
     except Exception as e:
         print_error(f"Delete failed: {e}")
         return False
-    
+
     # Verify deletion
     print_step("Verifying deletion...")
     try:
@@ -253,20 +259,20 @@ def test_infisical_backend():
             print_warning("Certificate still exists after deletion")
     except Exception as e:
         print_warning(f"Verification check failed: {e}")
-    
+
     # ==========================================================================
     # Summary
     # ==========================================================================
-    
+
     print()
     print(f"{Colors.GREEN}{'='*60}{Colors.RESET}")
     print(f"{Colors.GREEN}{Colors.BOLD}  🎉 ALL TESTS PASSED!{Colors.RESET}")
     print(f"{Colors.GREEN}{'='*60}{Colors.RESET}")
     print()
     print_info("Infisical backend is working correctly!")
-    print_info(f"You can configure it in settings.json:")
+    print_info("You can configure it in settings.json:")
     print()
-    print(f'''    "certificate_storage": {{
+    print(f"""    "certificate_storage": {{
         "backend": "infisical",
         "infisical": {{
             "site_url": "{config['site_url']}",
@@ -275,12 +281,12 @@ def test_infisical_backend():
             "project_id": "{config['project_id']}",
             "environment": "{config['environment']}"
         }}
-    }}''')
+    }}""")
     print()
-    
+
     return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     success = test_infisical_backend()
     sys.exit(0 if success else 1)

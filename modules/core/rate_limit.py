@@ -18,14 +18,14 @@ class RateLimitConfig:
 
     # Default rate limits (requests per minute)
     DEFAULT_LIMITS = {
-        'default': 100,  # 100 requests/minute default
-        'certificate_create': 30,  # Creating certs is expensive
-        'certificate_batch': 10,  # Batch operations are very expensive
-        'certificate_list': 60,  # Listing is cheaper
-        'certificate_revoke': 60,
-        'certificate_renew': 30,
-        'ocsp_status': 200,  # OCSP should be high
-        'crl_download': 60,
+        "default": 100,  # 100 requests/minute default
+        "certificate_create": 30,  # Creating certs is expensive
+        "certificate_batch": 10,  # Batch operations are very expensive
+        "certificate_list": 60,  # Listing is cheaper
+        "certificate_revoke": 60,
+        "certificate_renew": 30,
+        "ocsp_status": 200,  # OCSP should be high
+        "crl_download": 60,
     }
 
     def __init__(self, custom_limits: Optional[Dict[str, int]] = None):
@@ -61,7 +61,7 @@ class RateLimitConfig:
                 return self.limits[limit_key]
 
         # Return default
-        return self.limits.get('default', 100)
+        return self.limits.get("default", 100)
 
 
 class SimpleRateLimiter:
@@ -95,8 +95,7 @@ class SimpleRateLimiter:
         # Get requests for this identifier
         key = f"{identifier}:{endpoint}"
         self.requests[key] = [
-            req_time for req_time in self.requests[key]
-            if req_time > window_start
+            req_time for req_time in self.requests[key] if req_time > window_start
         ]
 
         # Check if under limit
@@ -116,7 +115,8 @@ class SimpleRateLimiter:
 
             for key in list(self.requests.keys()):
                 self.requests[key] = [
-                    req_time for req_time in self.requests[key]
+                    req_time
+                    for req_time in self.requests[key]
                     if req_time > window_start
                 ]
                 if not self.requests[key]:
@@ -137,24 +137,24 @@ def rate_limit_decorator(limiter: SimpleRateLimiter, endpoint: str):
     Returns:
         Decorator function
     """
+
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             # Get client IP (prefer X-Forwarded-For for proxied requests)
-            client_ip = request.headers.get(
-                'X-Forwarded-For',
-                request.remote_addr
-            ).split(',')[0].strip()
+            client_ip = (
+                request.headers.get("X-Forwarded-For", request.remote_addr)
+                .split(",")[0]
+                .strip()
+            )
 
             # Check rate limit
             if not limiter.is_allowed(client_ip, endpoint):
-                logger.warning(
-                    f"Rate limit exceeded: {client_ip} on {endpoint}"
-                )
+                logger.warning(f"Rate limit exceeded: {client_ip} on {endpoint}")
                 return {
-                    'error': 'Rate limit exceeded',
-                    'message': 'Too many requests. Please try again later.',
-                    'retry_after': 60
+                    "error": "Rate limit exceeded",
+                    "message": "Too many requests. Please try again later.",
+                    "retry_after": 60,
                 }, 429
 
             return f(*args, **kwargs)
