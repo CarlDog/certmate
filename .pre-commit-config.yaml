@@ -18,3 +18,12 @@ repos:
     hooks:
       - id: markdownlint
         args: []
+
+  - repo: local
+    hooks:
+      - id: dotnet-format-inventorymanagement
+        name: dotnet format (InventoryManagement)
+        entry: dotnet format .inventorymanagement/InventoryManagement.sln --verify-no-changes
+        language: system
+        pass_filenames: false
+        files: ^\.inventorymanagement/.*\.(cs|csproj|sln)$
