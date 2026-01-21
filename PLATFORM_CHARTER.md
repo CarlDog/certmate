@@ -1,8 +1,8 @@
 # Cambridge Platform - Strategic Charter
 
-**Document Version**: 1.0  
-**Last Updated**: January 21, 2026  
-**Status**: Active Reference Document  
+**Document Version**: 1.0
+**Last Updated**: January 21, 2026
+**Status**: Active Reference Document
 
 > This document defines the strategic objectives, architectural decisions, and technical challenges for the Cambridge Platform project. It serves as the authoritative reference for all development efforts and should be consulted before major architectural decisions.
 
@@ -12,7 +12,7 @@
 
 The Cambridge Platform is an **enterprise-grade Windows native background service** that automatically discovers, tracks, and manages certificate and infrastructure metadata across distributed systems in the Cambridge environment.
 
-**Core Thesis**: Consolidate certificate lifecycle automation (renewal, issuance, deployment) with infrastructure discovery into a single, extensible C# application running as a Windows Service, with modern web UI for operators.
+**Core Thesis**: Build an extensible, plugin-based Windows Service for collecting and managing infrastructure metadata across distributed systems. Start with certificate lifecycle automation and discovery; evolve to capture scheduled tasks, installed applications, Windows services, and other operational metadata via pluggable collectors.
 
 ---
 
@@ -25,10 +25,10 @@ The Cambridge Platform is an **enterprise-grade Windows native background servic
    - Eliminate Python runtime dependency
 
 2. **Infrastructure Metadata Collection**: Discover and track infrastructure assets and metadata using pluggable adapters
-   - Remote certificate discovery via WinRM polling (Windows machines, IIS bindings)
-   - F5 Load Balancer integration (certificate inventory)
-   - Repository/filesystem scanning
-   - Extensible architecture for additional adapters (future: vSphere, AWS, Azure, etc.)
+   - **Phase 1 (Certificates)**: Remote cert discovery via WinRM, IIS bindings, F5 integration, filesystem scanning
+   - **Phase 4+ (Extensible Collectors)**: Scheduled tasks, installed applications, Windows services, system patches, event logs, metrics
+   - Adapter pattern allows new collectors (vSphere, AWS, Azure) without modifying core
+   - SQL canonical store prevents duplication across multiple collectors
 
 3. **Certificate Lifecycle Automation**: Manage certificate creation, renewal, and deployment
    - Request new certificates via ACME (Let's Encrypt, DigiCert, private CAs)
@@ -44,28 +44,45 @@ The Cambridge Platform is an **enterprise-grade Windows native background servic
    - Configuration management (DNS providers, CAs, deployment policies)
    - Audit trail of all certificate operations
 
-5. **Extensible Architecture**: Enable future feature additions without core refactoring
+5. **Plugin-Based Metadata Collection Architecture**: Enable arbitrary asset collection without core refactoring
    - Hexagonal architecture (ports & adapters) enforced throughout
-   - Plugin-style integrations for storage backends, DNS providers, certificate authorities
-   - Domain-driven design with rich domain models
-   - Clear separation between business logic, adapters, and infrastructure concerns
+   - Collector plugins for each metadata type (certificates, scheduled tasks, applications, services, patches)
+   - Each collector runs independently, reports to canonical SQL store
+   - Plugin interfaces for storage backends, DNS providers, CAs, credential vaults, collectors
+   - Domain-driven design with rich domain models (Certificate, Machine, ScheduledTask, InstalledApplication)
+   - Example: Adding "Windows Services Collector" requires only implementing IMetadataCollector interface
 
-### 2.2 Secondary Objectives (Phase 4+, optional enhancements)
+### 2.2 Secondary Objectives (Phase 4+, expandable via plugins)
 
-- Client certificate management (OCSP, CRL, client cert issuance)
-- Multi-tenancy support (manage certificates for different departments/teams)
-- Secret storage backend integrations (Azure KeyVault, AWS Secrets Manager, HashiCorp Vault)
-- Advanced reporting and compliance tracking
-- API for programmatic certificate management
-- Integration with enterprise SSO (Kerberos, SAML)
+**Additional Metadata Collectors** (via plugin architecture):
+- Scheduled tasks inventory (name, schedule, account, status, results)
+- Installed applications (name, version, publisher, install date)
+- Windows services (name, status, startup type, dependencies)
+- System patches and updates (KB numbers, installed date, criticality)
+- Event log collection (security, certificate events, errors)
+- Performance baselines and metrics
+
+**Certificate Enhancements**:
+- Client certificate management (OCSP, CRL support)
+- Multi-CA support expansion (additional private CAs)
+
+**Operational Enhancements**:
+- Multi-tenancy support (metadata per department/team)
+- Secret storage integrations (Azure KeyVault, AWS Secrets, Vault)
+- Advanced cross-metadata reporting and compliance
+- REST API for programmatic metadata access
+- Enterprise SSO integration (Kerberos, SAML)
+- Policy-based alerting framework
+- Webhook support for external system integration
 
 ### 2.3 Non-Objectives (Out of Scope)
 
 - OCSP responder or CRL hosting
 - Certificate transparency log submission
-- Kubernetes/container orchestration
-- Cross-platform deployment (Windows-only focus)
-- Real-time event streaming (polling-based is acceptable)
+- Kubernetes/container orchestration (Windows infrastructure only)
+- Cross-platform deployment (Windows-only)
+- Real-time event streaming (polling acceptable)
+- Application dependency tracking (future consideration)
 
 ---
 
@@ -295,12 +312,52 @@ Rich domain models with validation and business logic:
 - **I**nterface Segregation: Lean interfaces (ICertificateRequest, IDnsProvider, etc.)
 - **D**ependency Inversion: Depend on abstractions, inject at composition root
 
-### 5.4 Testing Strategy
+### 5.5 Plugin Architecture Pattern
 
-- **Unit Tests**: Domain logic, no external dependencies
-- **Integration Tests**: Adapters with real services (SQL, WinRM, F5 in staging)
-- **E2E Tests**: Full certificate request → renewal → deployment workflow in test environment
-- **Test Layers**: Domain.Tests/, Application.Tests/, Infrastructure.Tests/ (existing structure)
+The Cambridge Platform is fundamentally built as an **extensible metadata collection platform**. The plugin architecture enables adding new capabilities without modifying core systems.
+
+**Plugin Types**:
+
+1. **Metadata Collectors** (IMetadataCollector)
+   - Certificate Collector (existing: certificates from stores, F5, repos)
+   - Scheduled Task Collector (future: scheduled tasks and configurations)
+   - Application Collector (future: installed software inventory)
+   - Service Collector (future: Windows services status)
+   - Patch Collector (future: installed updates and hotfixes)
+   - Event Log Collector (future: security and application events)
+   - Example Implementation: `public interface IMetadataCollector { Task<IEnumerable<MetadataEntity>> CollectAsync(...); }`
+
+2. **Certificate Authority Adapters** (ICertificateAuthority)
+   - ACME (Let's Encrypt, DigiCert)
+   - Private CA
+   - Future: DigiCert API, Sectigo, custom CAs
+
+3. **DNS Providers** (IDnsProvider)
+   - Top 3: Cloudflare, Route53, Azure DNS
+   - Future: Google Cloud DNS, GoDaddy, Akamai, custom
+
+4. **Storage Backends** (ISecretVault)
+   - SQL Server (primary)
+   - Azure KeyVault
+   - AWS Secrets Manager
+   - HashiCorp Vault
+
+5. **Deployment Targets** (ICertificateDeployer)
+   - Windows Certificate Store
+   - IIS bindings
+   - F5 Load Balancers
+   - Custom applications
+
+**Adding a New Collector (Example)**:
+```
+1. Define domain model (ScheduledTask: Name, Schedule, Status, LastRun)
+2. Implement IMetadataCollector interface
+3. Register in composition root (Agent/Program.cs)
+4. Wire into WebUI for visibility
+5. Done - no core changes required
+```
+
+This design allows teams to extend capabilities by **adding adapters, not modifying the platform**.
 
 ---
 
@@ -451,6 +508,7 @@ Rich domain models with validation and business logic:
 - Every 3 months (sanity check against reality)
 
 **Version History**:
+
 | Version | Date | Changes |
 |---|---|---|
 | 1.0 | 2026-01-21 | Initial charter created |
@@ -470,6 +528,6 @@ All major architectural questions have been resolved:
 
 ---
 
-**Approved By**: [Project Stakeholder/Date]  
-**Last Reviewed**: 2026-01-21  
+**Approved By**: [Project Stakeholder/Date]
+**Last Reviewed**: 2026-01-21
 **Next Review**: 2026-04-21
