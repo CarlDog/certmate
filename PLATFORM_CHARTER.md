@@ -443,7 +443,30 @@ This design allows teams to extend capabilities by **adding adapters, not modify
 - Data stored in existing InventoryManagement schema without conflicts
 - Plugin can be toggled on/off without affecting core service
 
-### Plugin Priority 2: Remote Folder Backup Repository
+### Plugin Priority 2: IIS Certificate Bindings
+**Objective**: Collect certificates bound to IIS websites and application pools on remote Windows servers
+
+**Scope**:
+- Connect to remote IIS servers via WinRM (existing capability)
+- Enumerate IIS sites and their SSL/TLS bindings
+- Extract certificate binding details: site name, binding IP/port, hostname, SNI configuration
+- Link IIS-bound certificates to Windows store certificates (by thumbprint)
+- Track binding context: which sites/apps use which certificates
+- Identify certificate usage (single site vs. multiple sites using same cert)
+
+**Dependencies**: WinRM adapter (existing), IIS PowerShell module (Get-WebBinding), Plugin 1 completion
+
+**Timeline**: 2-3 weeks (Phase 1, after Plugin 1 stable)
+
+**Success Criteria**:
+- Discovers all IIS sites and their certificate bindings from test servers
+- Correctly links IIS bindings to Windows store certificates (via thumbprint)
+- Captures SNI and hostname binding configurations
+- Identifies unused certificates in store (not bound to any IIS site)
+- Handles IIS servers with missing or expired certificates gracefully
+- Plugin integrates with existing MachineCertificate data model
+
+### Plugin Priority 3: Remote Folder Backup Repository
 **Objective**: Collect certificates from a designated backup/repository folder on remote network share
 
 **Scope**:
@@ -456,16 +479,16 @@ This design allows teams to extend capabilities by **adding adapters, not modify
 
 **Dependencies**: SMB/UNC path enumeration, certificate file parsing, deduplication logic
 
-**Timeline**: 2-3 weeks (Phase 1, after Plugin 1 stable)
+**Timeline**: 2-3 weeks (Phase 1, after Plugins 1-2 stable)
 
 **Success Criteria**:
 - Discovers certificates in test repository folder
 - Correctly parses .pem, .pfx, .cer formats
-- Deduplicates against Windows store discoveries (no double-counting)
+- Deduplicates against Windows/IIS discoveries (no double-counting)
 - Handles network timeouts and missing paths gracefully
 - Plugin integrates seamlessly with existing data model
 
-### Plugin Priority 3: F5 Load Balancer Integration
+### Plugin Priority 4: F5 Load Balancer Integration
 **Objective**: Collect certificates deployed on F5 BIG-IP Load Balancers
 
 **Scope**:
@@ -477,7 +500,7 @@ This design allows teams to extend capabilities by **adding adapters, not modify
 
 **Dependencies**: F5 REST client (existing), certificate chain parsing
 
-**Timeline**: 2-3 weeks (Phase 1, after Plugins 1-2 proven stable)
+**Timeline**: 2-3 weeks (Phase 1, after Plugins 1-3 proven stable)
 
 **Success Criteria**:
 - Discovers all certificates on F5 device
@@ -490,11 +513,11 @@ This design allows teams to extend capabilities by **adding adapters, not modify
 
 **DO NOT PROCEED** with additional metadata collectors (scheduled tasks, applications, services, patches, event logs) until:
 
-✅ **All three certificate plugins are stable** (running 30+ days without crashes)  
-✅ **Data quality is verified** (spot checks of collected data vs. reality)  
-✅ **Deduplication logic works** (no false positives across plugins)  
-✅ **Performance is acceptable** (collection cycle completes in <5 minutes for 50+ machines)  
-✅ **Operator can see results in Web UI** (dashboard shows collected certificates grouped by source)  
+✅ **All four certificate plugins are stable** (running 30+ days without crashes)
+✅ **Data quality is verified** (spot checks of collected data vs. reality)
+✅ **Deduplication logic works** (no false positives across plugins)
+✅ **Performance is acceptable** (collection cycle completes in <5 minutes for 50+ machines)
+✅ **Operator can see results in Web UI** (dashboard shows collected certificates grouped by source: Windows stores, IIS bindings, backup repos, F5 devices)
 ✅ **Renewal automation tested end-to-end** (collected cert identified as expiring → renewal triggered → new cert deployed back to Windows store or F5)
 
 **Rationale**: Certificate collection is the foundation use case. Stabilizing these three plugins proves the plugin architecture works and identifies systemic issues (data model, deduplication, UI) before expanding to other metadata types.
