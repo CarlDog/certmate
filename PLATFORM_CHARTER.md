@@ -417,6 +417,90 @@ This design allows teams to extend capabilities by **adding adapters, not modify
 
 ---
 
+## 6A. Certificate Collection Plugin Roadmap
+
+**Strategic Focus**: Deliver three stable, production-proven certificate collection plugins sequentially. Each plugin must be fully tested, documented, and proven stable before moving to the next.
+
+### Plugin Priority 1: Windows Machine Certificates (MY/ROOT Stores)
+**Objective**: Collect personal and root certificates from Windows Certificate Stores on remote machines via WinRM
+
+**Scope**:
+- Connect to remote machines via WinRM (existing InventoryManagement capability)
+- Enumerate MY store (personal certificates, private key status)
+- Enumerate ROOT store (trusted root CAs)
+- Extract: subject, issuer, thumbprint, expiry, key algorithm, key size, usage
+- Track certificate locations with source metadata (MY vs ROOT, machine path)
+- Store in canonical SQL table via existing MachineCertificate relationship
+
+**Dependencies**: WinRM adapter (existing), Windows Certificate Store API via PowerShell/C#
+
+**Timeline**: 2-3 weeks (Phase 1 focus)
+
+**Success Criteria**:
+- Discovers 100+ certificates from test machines
+- Correctly identifies expiry dates and critical certificates
+- WinRM connection handling and retries robust
+- Data stored in existing InventoryManagement schema without conflicts
+- Plugin can be toggled on/off without affecting core service
+
+### Plugin Priority 2: Remote Folder Backup Repository
+**Objective**: Collect certificates from a designated backup/repository folder on remote network share
+
+**Scope**:
+- Monitor remote network shares (SMB) for certificate files
+- Support multiple formats: .pem, .pfx, .cer, .crt
+- Extract certificate metadata from files (no private keys from .pem backups)
+- Track: file location, last modified date, certificate properties
+- Deduplicate against existing discovered certificates (compare thumbprints)
+- Useful for: backups created by external scripts, purchased certificates stored in repos
+
+**Dependencies**: SMB/UNC path enumeration, certificate file parsing, deduplication logic
+
+**Timeline**: 2-3 weeks (Phase 1, after Plugin 1 stable)
+
+**Success Criteria**:
+- Discovers certificates in test repository folder
+- Correctly parses .pem, .pfx, .cer formats
+- Deduplicates against Windows store discoveries (no double-counting)
+- Handles network timeouts and missing paths gracefully
+- Plugin integrates seamlessly with existing data model
+
+### Plugin Priority 3: F5 Load Balancer Integration
+**Objective**: Collect certificates deployed on F5 BIG-IP Load Balancers
+
+**Scope**:
+- Connect to F5 REST API (existing InventoryManagement integration)
+- Enumerate certificates in certificate stores
+- Extract properties: CN, expiry, issuer, certificate chain
+- Track F5 partition and virtual server associations
+- Link to discovered Windows machine certificates (if same cert deployed on both)
+
+**Dependencies**: F5 REST client (existing), certificate chain parsing
+
+**Timeline**: 2-3 weeks (Phase 1, after Plugins 1-2 proven stable)
+
+**Success Criteria**:
+- Discovers all certificates on F5 device
+- F5 API authentication and error handling robust
+- Certificate properties correctly extracted and stored
+- Can correlate F5 certs with Windows machine certs (same thumbprint)
+- Plugin handles F5 API rate limits and timeouts
+
+### Gate Before Further Plugin Development
+
+**DO NOT PROCEED** with additional metadata collectors (scheduled tasks, applications, services, patches, event logs) until:
+
+✅ **All three certificate plugins are stable** (running 30+ days without crashes)  
+✅ **Data quality is verified** (spot checks of collected data vs. reality)  
+✅ **Deduplication logic works** (no false positives across plugins)  
+✅ **Performance is acceptable** (collection cycle completes in <5 minutes for 50+ machines)  
+✅ **Operator can see results in Web UI** (dashboard shows collected certificates grouped by source)  
+✅ **Renewal automation tested end-to-end** (collected cert identified as expiring → renewal triggered → new cert deployed back to Windows store or F5)
+
+**Rationale**: Certificate collection is the foundation use case. Stabilizing these three plugins proves the plugin architecture works and identifies systemic issues (data model, deduplication, UI) before expanding to other metadata types.
+
+---
+
 ## 7. Success Criteria
 
 ### Mandatory (Project Complete Without These = Failure)
