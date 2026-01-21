@@ -467,26 +467,33 @@ This design allows teams to extend capabilities by **adding adapters, not modify
 - Plugin integrates with existing MachineCertificate data model
 
 ### Plugin Priority 3: Remote Folder Backup Repository
-**Objective**: Collect certificates from a designated backup/repository folder on remote network share
+**Objective**: Discover and track certificates stored in network repository folders to enable cleanup of unused/orphaned certificates
+
+**Business Value**: Organizations accumulate certificate files in backup/repository folders over years. This plugin enables:
+- **Usage Tracking**: Identify which repo certificates are deployed (match against Windows/IIS/F5 discoveries)
+- **Orphan Detection**: Find certificates in repo that are NOT deployed anywhere (candidates for deletion)
+- **Repository Cleanup**: Safely remove unused certificates from backup folders, reducing clutter and security risk
+- **Audit Trail**: Track certificate file locations for compliance and recovery purposes
 
 **Scope**:
 - Monitor remote network shares (SMB) for certificate files
 - Support multiple formats: .pem, .pfx, .cer, .crt
-- Extract certificate metadata from files (no private keys from .pem backups)
-- Track: file location, last modified date, certificate properties
-- Deduplicate against existing discovered certificates (compare thumbprints)
-- Useful for: backups created by external scripts, purchased certificates stored in repos
+- Extract certificate metadata from files (no private keys exposed)
+- Cross-reference: Compare repo cert thumbprints against deployed certs (Plugins 1-2-4)
+- Generate cleanup candidates: Certificates in repo but NOT found in Windows stores, IIS bindings, or F5 devices
+- Track: file location, last modified date, certificate properties, deployment status (in-use vs orphaned)
 
-**Dependencies**: SMB/UNC path enumeration, certificate file parsing, deduplication logic
+**Dependencies**: SMB/UNC path enumeration, certificate file parsing, cross-plugin deduplication logic
 
 **Timeline**: 2-3 weeks (Phase 1, after Plugins 1-2 stable)
 
 **Success Criteria**:
-- Discovers certificates in test repository folder
+- Discovers certificates in test repository folders
 - Correctly parses .pem, .pfx, .cer formats
-- Deduplicates against Windows/IIS discoveries (no double-counting)
+- Cross-references with Plugins 1-2 data (identifies deployed vs orphaned)
+- Generates accurate list of "safe to delete" candidates (not deployed anywhere)
 - Handles network timeouts and missing paths gracefully
-- Plugin integrates seamlessly with existing data model
+- Web UI shows repository status: X certificates in repo, Y deployed, Z orphaned (cleanup candidates)
 
 ### Plugin Priority 4: F5 Load Balancer Integration
 **Objective**: Collect certificates deployed on F5 BIG-IP Load Balancers
