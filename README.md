@@ -10,7 +10,7 @@
 [![API Documentation](https://img.shields.io/badge/API-Swagger-green)](http://localhost:8000/docs/)
 [![CI](https://github.com/fabriziosalmi/certmate/actions/workflows/ci.yml/badge.svg)](https://github.com/fabriziosalmi/certmate/actions/workflows/ci.yml)
 [![Build Multi-Platform Docker Images](https://github.com/fabriziosalmi/certmate/actions/workflows/docker-multiplatform.yml/badge.svg)](https://github.com/fabriziosalmi/certmate/actions/workflows/docker-multiplatform.yml)
- 
+
 ![screenshot1](screenshot_1.png)
 ![screenshot2](screenshot_2.png)
 
@@ -131,7 +131,7 @@ CertMate supports **22 DNS providers** through Let's Encrypt DNS-01 challenge vi
 - **Enterprise Multi-Account**: Cloudflare, AWS Route53, Azure DNS, Google Cloud DNS, DigitalOcean, PowerDNS, RFC2136
 - **Cloud Providers**: AWS Route53, Azure DNS, Google Cloud DNS, DigitalOcean, Linode, Vultr, Hetzner
 - **Enterprise DNS**: Cloudflare, DNS Made Easy, NS1, PowerDNS
-- **Domain Registrars**: Gandi, OVH, Namecheap, Porkbun, GoDaddy 
+- **Domain Registrars**: Gandi, OVH, Namecheap, Porkbun, GoDaddy
 - **European Providers**: OVH, Gandi, Hetzner
 - **Free Services**: Hurricane Electric, Dynu
 - **Standard Protocols**: RFC2136 (for BIND and compatible servers)
@@ -146,8 +146,8 @@ For supported providers, you can configure multiple accounts to enable:
 - **Disaster Recovery**: Backup accounts for high-availability scenarios
 - **Permission Scoping**: Accounts with minimal required permissions for security
 
-> **Detailed Setup Instructions**: See [DNS_PROVIDERS.md](DNS_PROVIDERS.md) for provider-specific configuration. 
-> **Step-by-Step Installation**: See [INSTALLATION.md](INSTALLATION.md) for complete setup guide. 
+> **Detailed Setup Instructions**: See [DNS_PROVIDERS.md](DNS_PROVIDERS.md) for provider-specific configuration.
+> **Step-by-Step Installation**: See [INSTALLATION.md](INSTALLATION.md) for complete setup guide.
 > **Multi-Account Examples**: See [MULTI_ACCOUNT_EXAMPLES.md](MULTI_ACCOUNT_EXAMPLES.md) for enterprise configuration examples.
 
 ## Quick Start with Docker
@@ -609,7 +609,7 @@ Content-Type: application/json
  "dns_provider": "cloudflare"
 }
 # This creates a single certificate covering all specified domains.
-# The primary domain is "example.com" and san_domains are additional 
+# The primary domain is "example.com" and san_domains are additional
 # Subject Alternative Names included in the certificate.
 # Note: All domains must use the same DNS provider for validation.
 
@@ -796,7 +796,7 @@ Authorization: Bearer your_token_here
 
 This endpoint returns a ZIP file containing all certificate files:
 - `cert.pem` - Server certificate
-- `chain.pem` - Intermediate certificate chain 
+- `chain.pem` - Intermediate certificate chain
 - `fullchain.pem` - Full certificate chain (cert + chain)
 - `privkey.pem` - Private key
 
@@ -819,43 +819,43 @@ class CertMateClient:
  def __init__(self, base_url, token):
  self.base_url = base_url.rstrip('/')
  self.headers = {"Authorization": f"Bearer {token}"}
- 
+
  def download_certificate(self, domain, extract_to=None):
  """Download and optionally extract certificate for domain"""
  url = f"{self.base_url}/{domain}/tls"
- 
+
  response = requests.get(url, headers=self.headers)
  response.raise_for_status()
- 
+
  zip_path = f"{domain}-tls.zip"
  with open(zip_path, 'wb') as f:
  f.write(response.content)
- 
+
  if extract_to:
  Path(extract_to).mkdir(parents=True, exist_ok=True)
  with zipfile.ZipFile(zip_path, 'r') as zip_ref:
  zip_ref.extractall(extract_to)
- 
+
  return zip_path
- 
+
  def list_certificates(self):
  """List all managed certificates"""
- response = requests.get(f"{self.base_url}/api/certificates", 
+ response = requests.get(f"{self.base_url}/api/certificates",
  headers=self.headers)
  response.raise_for_status()
  return response.json()
- 
+
  def create_certificate(self, domain, dns_provider=None):
  """Create new certificate for domain"""
  data = {"domain": domain}
  if dns_provider:
  data["dns_provider"] = dns_provider
- 
+
  response = requests.post(f"{self.base_url}/api/certificates/create",
  json=data, headers=self.headers)
  response.raise_for_status()
  return response.json()
- 
+
  def renew_certificate(self, domain):
  """Renew existing certificate"""
  response = requests.post(f"{self.base_url}/api/certificates/{domain}/renew",
@@ -868,7 +868,7 @@ class CertMateClient:
  self.base_url = base_url
  self.token = token
  self.headers = {"Authorization": f"Bearer {token}"}
- 
+
  def create_certificate(self, domain, dns_provider=None, account_id=None):
  """Create a new certificate with optional account specification"""
  data = {"domain": domain}
@@ -876,14 +876,14 @@ class CertMateClient:
  data["dns_provider"] = dns_provider
  if account_id:
  data["account_id"] = account_id
- 
+
  response = requests.post(
  f"{self.base_url}/api/certificates/create",
  headers=self.headers,
  json=data
  )
  return response.json()
- 
+
  def add_dns_account(self, provider, account_id, config):
  """Add a new DNS provider account"""
  response = requests.post(
@@ -892,7 +892,7 @@ class CertMateClient:
  json={"account_id": account_id, "config": config}
  )
  return response.json()
- 
+
  def list_dns_accounts(self, provider):
  """List all accounts for a DNS provider"""
  response = requests.get(
@@ -900,19 +900,19 @@ class CertMateClient:
  headers=self.headers
  )
  return response.json()
- 
+
  def download_certificate(self, domain, extract_to=None):
  """Download certificate as ZIP file"""
  response = requests.get(
  f"{self.base_url}/{domain}/tls",
  headers=self.headers
  )
- 
+
  if extract_to and response.status_code == 200:
  with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
  zip_file.extractall(extract_to)
  print(f"Certificate extracted to {extract_to}")
- 
+
  return response
 
 # Usage example
@@ -926,7 +926,7 @@ client.add_dns_account("cloudflare", "production", {
 })
 
 client.add_dns_account("cloudflare", "staging", {
- "name": "Staging Environment", 
+ "name": "Staging Environment",
  "description": "Development and testing",
  "api_token": "staging_token_here"
 })
@@ -966,7 +966,7 @@ resource "certmate_certificate" "api" {
 }
 
 resource "certmate_certificate" "web" {
- domain = "web.company.com" 
+ domain = "web.company.com"
  dns_provider = "route53"
  account_id = "main-aws"
 }
@@ -988,9 +988,9 @@ resource "kubernetes_secret" "api_tls" {
  name = "api-tls"
  namespace = "default"
  }
- 
+
  type = "kubernetes.io/tls"
- 
+
  data = {
  "tls.crt" = data.certmate_certificate_download.api.fullchain_pem
  "tls.key" = data.certmate_certificate_download.api.private_key_pem
@@ -1024,7 +1024,7 @@ create_backup() {
 
 download_certificate() {
  log "Downloading certificate for ${DOMAIN}"
- 
+
  # Download with retry logic
  for i in {1..3}; do
  if curl -f -H "Authorization: Bearer $API_TOKEN" \
@@ -1037,7 +1037,7 @@ download_certificate() {
  sleep 5
  fi
  done
- 
+
  log "Failed to download certificate after 3 attempts"
  return 1
 }
@@ -1046,7 +1046,7 @@ extract_certificate() {
  log "Extracting certificate to ${CERT_DIR}"
  mkdir -p "$CERT_DIR"
  unzip -o "${DOMAIN}-tls.zip" -d "$CERT_DIR"
- 
+
  # Set proper permissions
  chmod 600 "$CERT_DIR"/*.pem
  chown root:ssl-cert "$CERT_DIR"/*.pem
@@ -1066,13 +1066,13 @@ cleanup() {
 # Main execution
 main() {
  log "Starting certificate update for ${DOMAIN}"
- 
+
  create_backup
  download_certificate
  extract_certificate
  reload_services
  cleanup
- 
+
  log "Certificate update completed for ${DOMAIN}"
 }
 
@@ -1091,7 +1091,7 @@ main "$@"
  vars:
  certmate_url: "https://certmate.company.com"
  certmate_token: "{{ vault_certmate_token }}"
- 
+
  tasks:
  - name: Configure Cloudflare accounts
  uri:
@@ -1116,7 +1116,7 @@ main "$@"
  name: "Staging Environment"
  description: "Development and testing account"
  api_token: "{{ vault_cloudflare_staging_token }}"
- 
+
  - name: Create certificates with specific accounts
  uri:
  url: "{{ certmate_url }}/api/certificates/create"
@@ -1139,7 +1139,7 @@ main "$@"
  - domain: "test.company.com"
  provider: "route53"
  account_id: "backup-aws"
- 
+
  - name: Download and deploy certificates
  block:
  - name: Download certificate
@@ -1148,7 +1148,7 @@ main "$@"
  headers:
  Authorization: "Bearer {{ certmate_token }}"
  dest: "/tmp/{{ item }}-tls.zip"
- 
+
  - name: Extract certificate
  unarchive:
  src: "/tmp/{{ item }}-tls.zip"
@@ -1181,7 +1181,7 @@ main "$@"
  dns_provider: "route53"
  nginx_sites: ["web", "admin"]
  services_to_reload: ["nginx", "haproxy"]
- 
+
  tasks:
  - name: Create certificate directories
  file:
@@ -1191,7 +1191,7 @@ main "$@"
  group: ssl-cert
  mode: '0750'
  loop: "{{ certificate_domains }}"
- 
+
  - name: Check certificate expiry
  uri:
  url: "{{ certmate_url }}/api/certificates/{{ item.name }}/deployment-status"
@@ -1200,7 +1200,7 @@ main "$@"
  Authorization: "Bearer {{ api_token }}"
  register: cert_status
  loop: "{{ certificate_domains }}"
- 
+
  - name: Create new certificates if needed
  uri:
  url: "{{ certmate_url }}/api/certificates/create"
@@ -1214,7 +1214,7 @@ main "$@"
  dns_provider: "{{ item.dns_provider }}"
  loop: "{{ certificate_domains }}"
  when: cert_status.results[ansible_loop.index0].json.needs_renewal | default(false)
- 
+
  - name: Download certificates
  uri:
  url: "{{ certmate_url }}/{{ item.name }}/tls"
@@ -1224,7 +1224,7 @@ main "$@"
  dest: "/tmp/{{ item.name }}-tls.zip"
  creates: "/tmp/{{ item.name }}-tls.zip"
  loop: "{{ certificate_domains }}"
- 
+
  - name: Extract certificates
  unarchive:
  src: "/tmp/{{ item.name }}-tls.zip"
@@ -1234,11 +1234,11 @@ main "$@"
  mode: '0640'
  remote_src: yes
  loop: "{{ certificate_domains }}"
- notify: 
+ notify:
  - reload nginx
  - reload haproxy
  - restart services
- 
+
  - name: Verify certificate installation
  openssl_certificate:
  path: "/etc/ssl/certs/{{ item.name }}/fullchain.pem"
@@ -1246,7 +1246,7 @@ main "$@"
  has_expired: no
  valid_in: 86400 # Valid for at least 1 day
  loop: "{{ certificate_domains }}"
- 
+
  - name: Update nginx SSL configuration
  template:
  src: "nginx-ssl.conf.j2"
@@ -1254,24 +1254,24 @@ main "$@"
  backup: yes
  loop: "{{ certificate_domains | subelements('nginx_sites') }}"
  notify: reload nginx
- 
+
  - name: Cleanup temporary files
  file:
  path: "/tmp/{{ item.name }}-tls.zip"
  state: absent
  loop: "{{ certificate_domains }}"
- 
+
  handlers:
  - name: reload nginx
  systemd:
  name: nginx
  state: reloaded
- 
+
  - name: reload haproxy
  systemd:
  name: haproxy
  state: reloaded
- 
+
  - name: restart services
  systemd:
  name: "{{ item }}"
@@ -1662,7 +1662,7 @@ pip install -r requirements-storage-all.txt
 # Azure Key Vault only
 pip install -r requirements-azure-storage.txt
 
-# AWS Secrets Manager only 
+# AWS Secrets Manager only
 pip install -r requirements-aws-storage.txt
 
 # HashiCorp Vault only
@@ -1675,7 +1675,7 @@ pip install -r requirements-infisical-storage.txt
 **Requirements File Overview:**
 - `requirements-storage-all.txt` - All storage backends (recommended for production)
 - `requirements-azure-storage.txt` - Azure Key Vault dependencies
-- `requirements-aws-storage.txt` - AWS Secrets Manager dependencies 
+- `requirements-aws-storage.txt` - AWS Secrets Manager dependencies
 - `requirements-vault-storage.txt` - HashiCorp Vault dependencies
 - `requirements-infisical-storage.txt` - Infisical dependencies
 - `requirements-minimal.txt` - Base CertMate without storage backends
@@ -1743,7 +1743,7 @@ curl -X POST "http://localhost:8000/api/storage/migrate" \
  "target_backend": "aws_secrets_manager",
  "target_config": {
  "region": "us-east-1",
- "access_key_id": "AKIAIOSFODNN7EXAMPLE", 
+ "access_key_id": "AKIAIOSFODNN7EXAMPLE",
  "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
  },
  "verify_migration": true
@@ -1872,17 +1872,17 @@ upstream certmate_backend {
 server {
  listen 443 ssl http2;
  server_name certmate.company.com;
- 
+
  ssl_certificate /etc/ssl/certs/certmate.company.com/fullchain.pem;
  ssl_certificate_key /etc/ssl/certs/certmate.company.com/privkey.pem;
- 
+
  location / {
  proxy_pass http://certmate_backend;
  proxy_set_header Host $host;
  proxy_set_header X-Real-IP $remote_addr;
  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
  proxy_set_header X-Forwarded-Proto $scheme;
- 
+
  # API rate limiting
  limit_req zone=api burst=10 nodelay;
  }
@@ -2175,7 +2175,7 @@ curl -H "Authorization: Bearer your_token" \
 from prometheus_client import Counter, Histogram, generate_latest
 
 # Metrics
-certificate_requests = Counter('certmate_certificate_requests_total', 
+certificate_requests = Counter('certmate_certificate_requests_total',
  'Total certificate requests', ['domain', 'status'])
 certificate_expiry = Histogram('certmate_certificate_expiry_days',
  'Days until certificate expiry', ['domain'])
@@ -2197,7 +2197,7 @@ services:
  fluentd-address: localhost:24224
  tag: certmate
  fluentd-async-connect: "true"
- 
+
  fluentd:
  image: fluent/fluentd:v1.14
  volumes:
@@ -2251,14 +2251,14 @@ def send_webhook_notification(domain, event_type, details):
  webhook_url = os.getenv('WEBHOOK_URL')
  if not webhook_url:
  return
- 
+
  payload = {
  'domain': domain,
  'event': event_type,
  'timestamp': datetime.now().isoformat(),
  'details': details
  }
- 
+
  try:
  requests.post(webhook_url, json=payload, timeout=10)
  except Exception as e:
@@ -2425,7 +2425,7 @@ docker-compose -f docker-compose.yml -f docker-compose.debug.yml up
 - **#48**: SAN Certificates Support (ADDED)
 
 #### API Test Failures
-**Issue**: Some API endpoints may fail during rapid testing 
+**Issue**: Some API endpoints may fail during rapid testing
 **Workaround**: Add delays between API calls in automated tests:
 ```bash
 # Add delay between test calls
@@ -2533,6 +2533,19 @@ python app.py
 3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
 4. **Push** to the branch (`git push origin feature/amazing-feature`)
 5. **Open** a Pull Request
+
+## Related Projects
+
+- **[Inventory Management](https://github.com/CarlDog-Cambridge/InventoryManagement)** - Related infrastructure management system
+
+## Embedded Upstream (git subtree)
+
+- Vendored C# InventoryManagement code lives in [.inventorymanagement](.inventorymanagement)
+- Pull upstream updates:
+
+```bash
+git subtree pull --prefix=.inventorymanagement https://github.com/CarlDog-Cambridge/InventoryManagement main --squash
+```
 
 ## License
 
