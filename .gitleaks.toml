@@ -1,0 +1,34 @@
+# Gitleaks configuration for certmate
+# https://github.com/gitleaks/gitleaks
+
+title = "certmate gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+  description = "Global allowlist for known false positives"
+
+  paths = [
+    '''\.gitleaks\.toml$''',
+    '''\.gitignore$''',
+    '''\.env\.example$''',
+  ]
+
+  regexTarget = "match"
+
+  [[allowlist.regexes]]
+  description = "Curl doc examples with placeholder Bearer tokens"
+  regex = '''Bearer\s+(test|example|your)[A-Za-z0-9_-]*'''
+
+  [[allowlist.regexes]]
+  description = "HTML template placeholders"
+  regex = '''rfc2136_secret'''
+
+  [[allowlist.regexes]]
+  description = "Test placeholder API keys"
+  regex = '''(godaddy|porkbun|vultr|dme|ns1|console)[-_].*\d{3,}'''
+
+  [[allowlist.regexes]]
+  description = "Storage backend config variable"
+  regex = '''mount_point'''
