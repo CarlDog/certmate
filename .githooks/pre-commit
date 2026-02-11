@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[pre-commit] Restoring tools and solution..."
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet tool restore >/dev/null 2>&1 || true
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore
+
+echo "[pre-commit] Formatting check (dotnet-format)..."
+if dotnet dotnet-format --check; then
+  echo "[pre-commit] Formatting OK"
+else
+  echo "[pre-commit] Formatting issues found. Run: dotnet tool run dotnet-format"
+  exit 1
+fi
+
+echo "[pre-commit] Building..."
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet build --nologo
+
+echo "[pre-commit] Running tests..."
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet test --nologo --no-build --verbosity minimal --logger "trx;LogFileName=test-results.trx"
+
+# --- Gitleaks secret scanner (staged changes) ---
+echo "[pre-commit] Running gitleaks secret scan on staged changes..."
+
+GITLEAKS_BIN=""
+if command -v gitleaks &>/dev/null; then
+    GITLEAKS_BIN="gitleaks"
+else
+    WINGET_PATH="$LOCALAPPDATA/Microsoft/WinGet/Packages/Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe/gitleaks.exe"
+    if [ -f "$WINGET_PATH" ]; then
+        GITLEAKS_BIN="$WINGET_PATH"
+    fi
+fi
+
+if [ -n "$GITLEAKS_BIN" ]; then
+    if ! "$GITLEAKS_BIN" protect --staged --no-banner -v 2>&1; then
+        echo "[pre-commit] gitleaks found secrets in staged changes. Remove them before committing."
+        exit 1
+    else
+        echo "[pre-commit] gitleaks passed."
+    fi
+else
+    echo "[pre-commit] WARNING: gitleaks not found. Install with: winget install Gitleaks.Gitleaks"
+    echo "[pre-commit]          Skipping secret scan."
+fi
+
+echo "[pre-commit] All checks passed."

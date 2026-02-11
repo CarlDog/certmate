@@ -16,19 +16,9 @@ useDefault = true
   ]
 
   regexTarget = "match"
-
-  [[allowlist.regexes]]
-  description = "Curl doc examples with placeholder Bearer tokens"
-  regex = '''Bearer\s+(test|example|your)[A-Za-z0-9_-]*'''
-
-  [[allowlist.regexes]]
-  description = "HTML template placeholders"
-  regex = '''rfc2136_secret'''
-
-  [[allowlist.regexes]]
-  description = "Test placeholder API keys"
-  regex = '''(godaddy|porkbun|vultr|dme|ns1|console)[-_].*\d{3,}'''
-
-  [[allowlist.regexes]]
-  description = "Storage backend config variable"
-  regex = '''mount_point'''
+  regexes = [
+    '''Bearer\s+(test|example|your)[A-Za-z0-9_-]*''',
+    '''rfc2136_secret''',
+    '''(godaddy|porkbun|vultr|dme|ns1|console)[-_].*\d{3,}''',
+    '''mount_point''',
+  ]
