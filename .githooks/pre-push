@@ -1,29 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REMOTE_NAME=${1:-}
-REMOTE_URL=${2:-}
-
-# Enforce pushing via 'origin' so both remotes stay in sync
-if [[ "${REMOTE_NAME}" != "origin" ]]; then
-  echo "[pre-push] Blocked: push to '${REMOTE_NAME}'. Use 'origin' to mirror to GitHub + Azure DevOps."
-  echo "           Try: git push origin $(git branch --show-current)"
-  exit 1
-fi
-
-# Ensure origin has both pushurls configured (auto-heal if missing)
-GITHUB_URL="https://github.com/CarlDog-Cambridge/InventoryManagement.git"
-AZDO_URL="https://dev.azure.com/Cambridge-Technology/ProductionSupport/_git/InventoryManagement"
-
-pushurls=$(git config --get-all remote.origin.pushurl || true)
-if ! grep -qi "github.com" <<<"$pushurls"; then
-  echo "[pre-push] Adding GitHub pushurl to origin"
-  git remote set-url --add --push origin "$GITHUB_URL"
-fi
-if ! grep -qi "dev.azure.com" <<<"$pushurls"; then
-  echo "[pre-push] Adding Azure DevOps pushurl to origin"
-  git remote set-url --add --push origin "$AZDO_URL"
-fi
-
-echo "[pre-push] Mirroring via 'origin' confirmed. Proceeding with push..."
+# Disabled 2026-08-28: this hook used to force-mirror every `git push
+# origin` (blocking any other remote name) to two Cambridge corporate
+# repos and self-heal remote.origin.pushurl back to those two URLs,
+# silently excluding the actual GitHub origin (CarlDog/certmate.git)
+# from push targets. It went from committed-but-inert to actively
+# enforcing the moment core.hooksPath got wired to .githooks/ for
+# unrelated gitleaks/PII work, and pushed this repo's full commit
+# history (not a subtree-filtered slice) as a new branch onto:
+#   - https://github.com/CarlDog-Cambridge/InventoryManagement.git
+#     (redirects server-side to Cambridge.ProdSpt.IRIS)
+#   - https://dev.azure.com/Cambridge-Technology/ProductionSupport/_git/InventoryManagement
+# Both were cleaned up (branch deleted) the same day. See CLAUDE memory
+# certmate-security-risk.md for the full incident writeup.
+#
+# If a real, deliberate mirror to the Cambridge InventoryManagement/IRIS
+# repo is wanted later, it should be a `git subtree push` (or equivalent)
+# scoped to .inventorymanagement/ only, run explicitly — not a blanket
+# full-history mirror silently triggered by every `git push origin`.
 exit 0
