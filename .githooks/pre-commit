@@ -95,15 +95,17 @@ echo "No PII patterns detected."
 # --- certmate-specific checks (appended after canonical section 3) ---
 # .NET build/format/test gate for the root InventoryManagement solution.
 # (This repo also carries a duplicate copy under .inventorymanagement/,
-# checked separately below via the pre-commit-framework chain — see
-# CLAUDE memory certmate-security-risk.md for the open dedup decision.)
+# checked here — the root-level duplicate that used to sit here was
+# removed 2026-08-28; see CLAUDE memory certmate-security-risk.md.)
+
+SLN=".inventorymanagement/InventoryManagement.sln"
 
 echo "[pre-commit] Restoring tools and solution..."
 DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet tool restore >/dev/null 2>&1 || true
-DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore "$SLN"
 
 echo "[pre-commit] Formatting check (dotnet-format)..."
-if dotnet format --verify-no-changes; then
+if dotnet format "$SLN" --verify-no-changes; then
   echo "[pre-commit] Formatting OK"
 else
   echo "[pre-commit] Formatting issues found. Run: dotnet tool run dotnet-format"
@@ -111,10 +113,10 @@ else
 fi
 
 echo "[pre-commit] Building..."
-DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet build --nologo
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet build "$SLN" --nologo
 
 echo "[pre-commit] Running tests..."
-DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet test --nologo --no-build --verbosity minimal --logger "trx;LogFileName=test-results.trx"
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet test "$SLN" --nologo --no-build --verbosity minimal --logger "trx;LogFileName=test-results.trx"
 
 # Chain to the pre-commit-framework-managed hook (ruff/mypy/dotnet-format
 # on .inventorymanagement — see .pre-commit-config.yaml). core.hooksPath
