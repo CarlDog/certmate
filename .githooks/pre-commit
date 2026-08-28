@@ -1,12 +1,109 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Canonical fleet pre-commit hook: author-identity guard + gitleaks +
+# PII pattern scan. Generic by design — drop into any repo via the
+# /install-precommit-hook skill or reference/install-hooks.{sh,ps1}.
+# Contains NO repo-specific logic and NO baked-in PII: the patterns are
+# generic so the hook itself is safe to commit publicly.
+#
+# Extend per-repo by appending project-specific checks AFTER section 3
+# (e.g. a schema-drift gate) — keep sections 1-3 identical to the
+# canonical version so the fleet stays in lockstep.
+
+# Personal-domain email pattern, used in two places:
+#  - the author-identity check (step 1)
+#  - the PII pattern scan over staged content (step 3)
+PERSONAL_EMAIL_PATTERN='[A-Za-z0-9._%+-]+@(gmail|outlook|hotmail|yahoo|icloud|me|live|aol)\.[a-z]{2,}'
+
+# 1. Author identity check
+# git's staged-content scan can't see commit metadata, so the author
+# email can leak into commit history even when file contents are clean.
+# Block personal-domain emails in the configured author identity.
+echo "Checking author identity..."
+AUTHOR_IDENT=$(git var GIT_AUTHOR_IDENT 2>/dev/null || true)
+# git var returns "Name <email> timestamp tz" — extract the email.
+AUTHOR_EMAIL=$(printf '%s' "$AUTHOR_IDENT" | sed -nE 's/.*<([^>]+)>.*/\1/p')
+if printf '%s' "$AUTHOR_EMAIL" | grep -qE "$PERSONAL_EMAIL_PATTERN"; then
+  echo "" >&2
+  echo "Commit blocked: author identity uses a personal-domain email." >&2
+  echo "  email: $AUTHOR_EMAIL" >&2
+  echo "" >&2
+  echo "Set a GitHub noreply alias for this repo:" >&2
+  echo "  git config user.email '<numeric-id>+<github-login>@users.noreply.github.com'" >&2
+  echo "" >&2
+  echo "Find your numeric id at https://api.github.com/users/<login>" >&2
+  exit 1
+fi
+
+# 2. Secret scan via gitleaks
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "ERROR: gitleaks not installed. Install from https://github.com/gitleaks/gitleaks" >&2
+  exit 1
+fi
+
+echo "Running gitleaks..."
+# Use the repo's .gitleaks.toml when present (path exclusions, allowlists);
+# fall back to gitleaks' default config so the hook works in any repo.
+if [ -f .gitleaks.toml ]; then
+  gitleaks protect --staged --redact --config .gitleaks.toml
+else
+  gitleaks protect --staged --redact
+fi
+
+# 3. PII pattern scan over staged content
+# Catches user-home directory references and personal-domain email
+# addresses that often leak into committed content (workstation paths,
+# author identity, etc.). Patterns are deliberately generic so the hook
+# can be committed publicly without itself containing any specific PII.
+echo "Running PII pattern check..."
+
+PII_PATTERNS=(
+  '[/\\]Users[/\\][A-Za-z0-9._-]+[/\\]'
+  '[/\\]home[/\\][A-Za-z0-9._-]+[/\\]'
+  "$PERSONAL_EMAIL_PATTERN"
+)
+
+STAGED=$(git diff --cached --name-only --diff-filter=AM)
+FOUND=0
+if [ -n "$STAGED" ]; then
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    for pattern in "${PII_PATTERNS[@]}"; do
+      matches=$(git show ":$file" 2>/dev/null | grep -nE "$pattern" || true)
+      if [ -n "$matches" ]; then
+        if [ "$FOUND" -eq 0 ]; then
+          echo "" >&2
+          echo "PII patterns detected in staged content:" >&2
+          FOUND=1
+        fi
+        echo "  $file" >&2
+        printf '%s\n' "$matches" | head -3 | sed 's/^/    /' >&2
+      fi
+    done
+  done <<< "$STAGED"
+fi
+
+if [ "$FOUND" -ne 0 ]; then
+  echo "" >&2
+  echo "Scrub the matches and re-stage. To adjust patterns, edit .githooks/pre-commit." >&2
+  exit 1
+fi
+
+echo "No PII patterns detected."
+
+# --- certmate-specific checks (appended after canonical section 3) ---
+# .NET build/format/test gate for the root InventoryManagement solution.
+# (This repo also carries a duplicate copy under .inventorymanagement/,
+# checked separately below via the pre-commit-framework chain — see
+# CLAUDE memory certmate-security-risk.md for the open dedup decision.)
+
 echo "[pre-commit] Restoring tools and solution..."
 DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet tool restore >/dev/null 2>&1 || true
 DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore
 
 echo "[pre-commit] Formatting check (dotnet-format)..."
-if dotnet dotnet-format --check; then
+if dotnet format --verify-no-changes; then
   echo "[pre-commit] Formatting OK"
 else
   echo "[pre-commit] Formatting issues found. Run: dotnet tool run dotnet-format"
@@ -19,29 +116,12 @@ DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet build --nologo
 echo "[pre-commit] Running tests..."
 DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet test --nologo --no-build --verbosity minimal --logger "trx;LogFileName=test-results.trx"
 
-# --- Gitleaks secret scanner (staged changes) ---
-echo "[pre-commit] Running gitleaks secret scan on staged changes..."
-
-GITLEAKS_BIN=""
-if command -v gitleaks &>/dev/null; then
-    GITLEAKS_BIN="gitleaks"
-else
-    WINGET_PATH="$LOCALAPPDATA/Microsoft/WinGet/Packages/Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe/gitleaks.exe"
-    if [ -f "$WINGET_PATH" ]; then
-        GITLEAKS_BIN="$WINGET_PATH"
-    fi
-fi
-
-if [ -n "$GITLEAKS_BIN" ]; then
-    if ! "$GITLEAKS_BIN" protect --staged --no-banner -v 2>&1; then
-        echo "[pre-commit] gitleaks found secrets in staged changes. Remove them before committing."
-        exit 1
-    else
-        echo "[pre-commit] gitleaks passed."
-    fi
-else
-    echo "[pre-commit] WARNING: gitleaks not found. Install with: winget install Gitleaks.Gitleaks"
-    echo "[pre-commit]          Skipping secret scan."
-fi
+# Chain to the pre-commit-framework-managed hook (ruff/mypy/dotnet-format
+# on .inventorymanagement — see .pre-commit-config.yaml). core.hooksPath
+# now points at this directory instead of .git/hooks, so without this
+# call those framework-managed checks would silently stop running.
+echo "[pre-commit] Running pre-commit framework hooks (ruff/mypy/dotnet-format)..."
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+"$REPO_ROOT/.git/hooks/pre-commit"
 
 echo "[pre-commit] All checks passed."

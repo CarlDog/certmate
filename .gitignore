@@ -40,6 +40,8 @@ backups/
 *.key
 *.crt
 *.csr
+*.pfx
+*.p12
 letsencrypt/
 .secrets/
 
@@ -99,3 +101,4 @@ github_response.md
 [Oo]bj/
 *.user
 .vs/
+[Tt]est[Rr]esults/
