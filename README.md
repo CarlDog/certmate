@@ -82,7 +82,7 @@ cd platform/api-gateway
 ## Branch Strategy
 
 - `main`: Stable platform releases
-- `cambridge.v2.platform`: Active development (this branch)
+- `cambridge.v3.foundation`: Active development (this branch)
 - Upstream changes pulled via git subtree (not submodules)
 
 ## License

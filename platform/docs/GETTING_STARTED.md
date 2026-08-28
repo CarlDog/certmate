@@ -6,7 +6,7 @@
 # Clone the repository
 git clone https://github.com/fabriziosalmi/certmate.git cambridge-platform
 cd cambridge-platform
-git checkout cambridge.v2.platform
+git checkout cambridge.v3.foundation
 
 # Start all services
 docker compose up -d

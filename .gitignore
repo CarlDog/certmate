@@ -93,3 +93,9 @@ github_response.md
 
 # Local agent state
 .serena/
+
+# .NET build output (InventoryManagement C# subsystem at repo root)
+[Bb]in/
+[Oo]bj/
+*.user
+.vs/
