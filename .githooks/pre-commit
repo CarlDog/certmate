@@ -95,7 +95,7 @@ PII_PATTERNS=(
   "$PERSONAL_EMAIL_PATTERN"
 )
 
-STAGED=$(git diff --cached --name-only --diff-filter=AM)
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
 FOUND=0
 if [ -n "$STAGED" ]; then
   while IFS= read -r file; do
